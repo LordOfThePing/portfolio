@@ -1,0 +1,88 @@
+video {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    z-index: -1;
+}
+
+.hero-container {
+    /*background: url('../../public/images/img-home.jpg') center center/hover no-repeat;*/ 
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: left ;
+    box-shadow: inset 0 0 0 1000px rgba(0, 0, 0, 0.2);
+    object-fit: contain;
+}
+
+.hero-container > h2, .hero-container > h1, .hero-container > p, .hero-container > div{
+    margin-left: 10%;
+}
+
+.hero-container > h2 {
+    color: #fff;
+    font-size: 40px;
+    margin-left: 15%;
+    margin-top: -100px;
+    letter-spacing: 6px;
+}
+
+.hero-container > h1 {
+    color: #fff;
+    font-size: 160px;
+    margin-top: -62px; 
+}
+
+.hero-container > p {
+    margin-top: -15px;
+    margin-left: 15%;
+    margin-bottom: 8px;
+    color: #fff;
+    font-size: 32px;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+.hero-btns {
+    margin-top: 32px;
+}
+
+.hero-btns .btn {
+    margin:6px; 
+}
+
+.fa-play-circle {
+    margin-left: 4px;
+}
+
+@media screen and (max-width: 1050px) {
+
+    .hero-container > h2, .hero-container > h1, .hero-container > p, .hero-container > div{
+        margin-left: 0%;
+    }
+    .hero-container{
+        align-items: center;
+    }
+    .hero-container > h1 {
+        letter-spacing: 8px;
+        font-size: 15vw;
+    }
+    .hero-container > h2 {
+        font-size: 35px;
+        position: sticky;
+        letter-spacing: 4px;
+        margin-bottom: 30px;
+    }    
+    .hero-container > p {
+        margin-top: -21px;
+        font-size: 20px;
+    }
+    
+    .hero-btns {
+        margin-top: -5px;
+    }
+
+
+}
