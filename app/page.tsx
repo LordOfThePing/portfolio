@@ -31,7 +31,7 @@ export default function Page() {
           , although i'm still a noob and/or rookie in most life aspects. unless in <span className="italic">Rocket League</span>, where i'm a god.
         </p>
         <p>
-          You can {""}
+          you can {""}
           <a
             target="_blank"
             href={socialLinks.email}
@@ -41,7 +41,7 @@ export default function Page() {
           {""} for freelance work! 
         </p>
         <p>
-          Site build is still in progress...
+          site build is still in progress...
         </p>
 
       </div>
