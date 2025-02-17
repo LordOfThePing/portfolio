@@ -45,7 +45,6 @@ export default function Page() {
         </p>
 
       </div>
-      <BlogPosts />
     </section>
   );
 }
