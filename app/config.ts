@@ -14,4 +14,6 @@ export const socialLinks = {
   instagram: "https://www.instagram.com/pedroflynn_/",
   linkedin: "https://www.linkedin.com/in/pedro-flynn/",
   email: "mailto:flynnpedroa@gmail.com",
+  uba: "https://www.uba.ar/",
+  fiuba: "https://www.fi.uba.ar/",
 };
