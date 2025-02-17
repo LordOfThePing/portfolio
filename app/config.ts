@@ -16,4 +16,5 @@ export const socialLinks = {
   email: "mailto:flynnpedroa@gmail.com",
   uba: "https://www.uba.ar/",
   fiuba: "https://www.fi.uba.ar/",
+  rocketleague: "https://rocketleague.tracker.network/rocket-league/profile/epic/LordOfThePing22/overview",
 };

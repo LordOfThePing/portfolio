@@ -5,7 +5,7 @@ import BlogPosts from "./blog/page";
 export default function Page() {
   return (
     <section>
-      <a href={socialLinks.twitter} target="_blank">
+      <a href={socialLinks.linkedin} target="_blank">
         <Image
           src="/fotocv.jpg"
           alt="Profile picture"
@@ -27,8 +27,16 @@ export default function Page() {
           graduated in Computer Engineering at {" "}
           <a href={socialLinks.uba} target="_blank">
             University of Buenos Aires (UBA)
-          </a>{" "}
-          , although i'm still a noob and/or rookie in most life aspects. unless in <span className="italic">Rocket League</span>, where i'm a god.
+          </a>
+          , although i'm still a noob and/or rookie in most life aspects. unless in {""}
+          <a
+            className="italic"
+            target="_blank"
+            href={socialLinks.rocketleague}
+            >
+            Rocket League
+          </a>
+          , where i'm a god. (or at least i was once)
         </p>
         <p>
           you can {""}
