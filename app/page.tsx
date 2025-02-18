@@ -21,11 +21,15 @@ export default function Page() {
       </h1>
       <div className="prose prose-neutral dark:prose-invert">
         <p>
-          this is my personal space in order to have all my archives in one place.
+          this is my personal space, made with the objective of having all my projects and thoughts in one place.
         </p>
         <p>
-          graduated in Computer Engineering at {" "}
-          <a href={socialLinks.uba} target="_blank">
+          currently a FullStack Engineer at {" "}
+          <a href={socialLinks.globant} target="_blank" className="italic">
+            Globant
+          </a>
+          , graduated in Computer Engineering at {" "}
+          <a href={socialLinks.uba} target="_blank" className="italic">
             University of Buenos Aires (UBA)
           </a>
           , although i'm still a noob and/or rookie in most life aspects. unless in {""}
@@ -36,7 +40,7 @@ export default function Page() {
             >
             Rocket League
           </a>
-          , where i'm a god. (or at least i was once)
+          , where i'm a god. (or at least i once was)
         </p>
         <p>
           you can {""}
