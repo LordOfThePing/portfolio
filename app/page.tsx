@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { socialLinks } from "./config";
-import BlogPosts from "./blog/page";
+import ProjectsCollage from "./projectscollage/page";
 
 export default function Page() {
   return (
@@ -9,14 +9,14 @@ export default function Page() {
         <Image
           src="/fotocv.jpg"
           alt="Profile picture"
-          className="rounded-full block lg:mt-5 mt-0 lg:mb-5 mb-10 mx-auto sm:float-right sm:ml-5 sm:mb-5 grayscale hover:grayscale-0"
+          className="rounded-full block lg:-mt-3 -mt-3 lg:mb-2 mb-10 mx-auto sm:float-right sm:ml-5 sm:mb-5 grayscale hover:grayscale-0"
           unoptimized
           width={160}
           height={160}
           priority
         />
       </a>
-      <h1 className="mb-8 text-2xl font-medium ">
+      <h1 className="mb-8 text-2xl font-medium">
         welcome to my site! 👋 
       </h1>
       <div className="prose prose-neutral dark:prose-invert">
@@ -52,11 +52,9 @@ export default function Page() {
           </a>
           {""} for freelance work! 
         </p>
-        <p>
-          site build is still in progress...
-        </p>
 
       </div>
+      <ProjectsCollage />
     </section>
   );
 }

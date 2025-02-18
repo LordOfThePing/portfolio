@@ -30,7 +30,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 href={image.href}
-                className="block w-full h-full"
+                className="transform block w-full h-full grayscale hover:grayscale-0 transition duration-300 hover:scale-105"
               >
                 <Image
                   alt={image.alt}
@@ -48,7 +48,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
                 fill
                 sizes="(max-width: 768px) 50vw, 33vw"
                 priority
-                className="rounded-lg object-cover"
+                className="rounded-lg object-cover grayscale hover:grayscale-0"
               />
             )}
           </div>
