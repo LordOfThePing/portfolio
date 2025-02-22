@@ -6,6 +6,8 @@ interface ImageGridProps {
     src: string;
     alt: string;
     href?: string;
+    title: string; 
+    shortDescription: string;
   }[];
   columns?: 2 | 3 | 4; // Accepts 2, 3, or 4 columns
 }
@@ -24,7 +26,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
     <section>
       <div className={`grid ${gridClass} gap-4 my-8`}>
         {images.map((image, index) => (
-          <div key={index} className="relative aspect-square">
+          <div key={index} className="relative aspect-square group">
             {image.href ? (
               <a
                 target="_blank"
@@ -51,6 +53,10 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
                 className="rounded-lg object-cover grayscale hover:grayscale-0"
               />
             )}
+            <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-5 text-center font-sans">
+              <h5 className="text-md font-sans font-bold text-gray-100">{image.title}</h5>
+              <p className="text-gray-50 text-sm">{image.shortDescription}</p>
+            </div>
           </div>
         ))}
       </div>
