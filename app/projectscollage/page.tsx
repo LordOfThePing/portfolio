@@ -58,57 +58,6 @@ export default function ProjectsCollage() {
         ]}
       />
 
-      <ImageGrid
-        columns={2}
-        images={[
-          { src: "/photos/photo1.jpg", alt: "Roman columns" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-          { src: "/photos/photo2.jpg", alt: "Big Ben" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-          { src: "/photos/photo3.jpg", alt: "Sacré-Cœur Basilica" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-          { src: "/photos/photo4.jpg", alt: "Eiffel Tower" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-        ]}
-      />
-
-      <ImageGrid
-        columns={4}
-        images={[
-          { src: "/photos/photo1.jpg", alt: "Roman columns" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-          { src: "/photos/photo2.jpg", alt: "Big Ben" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-          { src: "/photos/photo3.jpg", alt: "Sacré-Cœur Basilica" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-          { src: "/photos/photo4.jpg", alt: "Eiffel Tower" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-          { src: "/photos/photo5.jpg", alt: "Taj Mahal" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-          { src: "/photos/photo6.jpg", alt: "Colosseum" , 
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
-          },
-        ]}
-      />
     </section>
   );
 }
