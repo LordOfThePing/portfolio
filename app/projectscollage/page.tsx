@@ -15,17 +15,17 @@ export default function ProjectsCollage() {
         images={[
           {
             src: "/photos/tableroTEG.png",
-            alt: "A.L.T.E.G.O.",
+            alt: "TEG image",
             href: "https://github.com/LordOfThePing/algo3_tp2",
             title: "A.L.T.E.G.O.",
             shortDescription: "un juego de mesa de táctica y estrategia de guerra.",
           },
           {
-            src: "/photos/photo2.jpg",
-            alt: "Big Ben",
-            href: "https://unsplash.com/photos/big-ben-london-MdJq0zFUwrw?utm_content=creditShareLink&utm_medium=referral&utm_source=unsplash",
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
+            src: "/gifs/tdl-url-shortener.gif",
+            alt: "tech gif",
+            href: "https://github.com/gabokatta/tdl-urlshort",
+            title: "TDL URL Shortener",
+            shortDescription: "Un acortador de URLs.",
           },
           {
             src: "/photos/photo3.jpg",
