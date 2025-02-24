@@ -14,11 +14,11 @@ export default function ProjectsCollage() {
         columns={3}
         images={[
           {
-            src: "/photos/photo1.jpg",
-            alt: "Roman columns",
-            href: "https://unsplash.com/photos/people-walking-near-building-during-daytime-dFLBDQQeffU?utm_content=creditShareLink&utm_medium=referral&utm_source=unsplash",
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
+            src: "/photos/tableroTEG.png",
+            alt: "A.L.T.E.G.O.",
+            href: "https://github.com/LordOfThePing/algo3_tp2",
+            title: "A.L.T.E.G.O.",
+            shortDescription: "un juego de mesa de táctica y estrategia de guerra.",
           },
           {
             src: "/photos/photo2.jpg",
