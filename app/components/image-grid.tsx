@@ -31,7 +31,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               href={image.href}
-              className="transform block w-full h-full grayscale group-hover:grayscale-0 transition duration-300 group-hover:scale-105"
+              className="transform block w-full h-full grayscale-0 group-hover:grayscale transition duration-300 group-hover:scale-105"
             >
               <Image
                 alt={image.alt}
