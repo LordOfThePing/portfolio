@@ -35,11 +35,11 @@ export default function ProjectsCollage() {
             shortDescription: "the title is self-explanatory",
           },
           {
-            src: "/photos/photo4.jpg",
-            alt: "Eiffel Tower",
-            href: "https://unsplash.com/photos/the-eiffel-tower-towering-over-the-city-of-paris-OgPuPvPsHLM?utm_content=creditShareLink&utm_medium=referral&utm_source=unsplash",
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
+            src: "/gifs/irc-chat.gif",
+            alt: "Irc-chat",
+            href: "https://github.com/taller-1-fiuba-rust/22C2-Subite-A-La-Papaneta",
+            title: "IRC Chat",
+            shortDescription: "text messaging app for individual and group chat over a network",
           },
           {
             src: "/photos/photo5.jpg",

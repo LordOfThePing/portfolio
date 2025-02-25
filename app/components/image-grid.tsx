@@ -44,7 +44,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
             </a>
           
             <a href={image.href} target="_blank"> 
-            <div className="absolute inset-0 rounded-lg group-hover:scale-105 transform transition bg-black bg-opacity-70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 duration-300 p-5 text-center font-sans">
+            <div className="absolute inset-0 rounded-lg group-hover:scale-105 transform transition bg-black bg-opacity-70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 duration-300 p-3 text-center font-sans">
               <h2 className="text-md font-sans font-bold text -gray-100">{image.title}</h2>
               <p className="text-gray-50 text-xs">{image.shortDescription}</p>
             </div>
