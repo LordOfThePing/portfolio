@@ -42,18 +42,18 @@ export default function ProjectsCollage() {
             shortDescription: "text messaging app for individual and group chat over a network",
           },
           {
-            src: "/photos/photo5.jpg",
-            alt: "Taj Mahal",
-            href: "https://unsplash.com/photos/taj-mahal-india-IPlPkWPJ2fo",
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
+            src: "/photos/software-architecture.jpg",
+            alt: "Azure",
+            href: "https://github.com/LordOfThePing/arquiDelSoftware2C22",
+            title: "Software Architecture Metrics",
+            shortDescription: "testing endpoints in hosted in Azure with Artillery",
           },
           {
-            src: "/photos/photo6.jpg",
-            alt: "Colosseum",
-            href: "https://unsplash.com/photos/brown-concrete-building-under-blue-sky-during-daytime-3cyBR1rIJmA?utm_content=creditShareLink&utm_medium=referral&utm_source=unsplash",
-            title: "ROMAN COLUMNS",
-            shortDescription: "A photo of Roman columns",
+            src: "/photos/rdt.jpg",
+            alt: "rdt",
+            href: "https://github.com/FranciscoGauna/TP-distribuidos",
+            title: "Reliable Data Transfer via UDP",
+            shortDescription: "upload & download of files implementing transfer protocols",
           },
         ]}
       />
