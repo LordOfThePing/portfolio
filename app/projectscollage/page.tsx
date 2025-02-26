@@ -32,7 +32,7 @@ export default function ProjectsCollage() {
             alt: "Minesweeper in Rust",
             href: "https://github.com/LordOfThePing/tp1taller",
             title: "Rust Minesweeper",
-            shortDescription: "the title is self-explanatory",
+            shortDescription: "not the actual game, but a board translator",
           },
           {
             src: "/gifs/irc-chat.gif",
