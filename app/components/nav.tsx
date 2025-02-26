@@ -2,11 +2,20 @@ import Link from "next/link";
 import { ThemeSwitch } from "./theme-switch";
 import { metaData } from "../config";
 
-const navItems = {
+type NavItem = {
+  path: string;
+  name: string;
+};
+
+
+const navItems : []= [
+
+  /*
   "/blog": { name: "Blog" },
   "/projects": { name: "Projects" },
   "/photos": { name: "Photos" },
-};
+  */
+];
 
 export function Navbar() {
   return (
