@@ -72,7 +72,7 @@ export default function Page() {
           src="https://www.canva.com/design/DAEvcuLwit0/vsxsCvJ76C6G1dDZK6Ok9Q/view?embed" allowFullScreen={true} allow="fullscreen">
         </iframe>
       </div>
-      <a href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAEvcuLwit0&#x2F;vsxsCvJ76C6G1dDZK6Ok9Q&#x2F;view?utm_content=DAEvcuLwit0&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">CV - Pedro Andrés Flynn</a> by Pedro Andres Flynn
+      <a href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAEvcuLwit0&#x2F;vsxsCvJ76C6G1dDZK6Ok9Q&#x2F;view?utm_content=DAEvcuLwit0&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">CV - Pedro Andrés Flynn</a>
     </section>
   );
 }

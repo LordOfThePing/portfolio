@@ -21,8 +21,8 @@ export default function ProjectsCollage() {
             shortDescription: "war strategy and tactics game",
           },
           {
-            src: "/gifs/tdl-url-shortener.gif",
-            alt: "tech gif",
+            src: "/photos/tdl-url-shortener.png",
+            alt: "url shortener",
             href: "https://github.com/gabokatta/tdl-urlshort",
             title: "URL Shortener",
             shortDescription: "Kotlin-made url shortener",
