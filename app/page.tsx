@@ -34,7 +34,8 @@ export default function Page() {
           <a href={socialLinks.uba} target="_blank" className="italic">
             University of Buenos Aires (UBA)
           </a>
-          , although i'm still a noob and/or rookie in most life aspects. unless in {""}
+          , although i'm still a noob and/or rookie in most life aspects, where i strive to improve and surpass myself everyday, 
+          trying to focus on things that challenge me and make me grow. unless in {""}
           <a
             className="italic"
             target="_blank"

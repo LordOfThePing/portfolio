@@ -1,7 +1,7 @@
 export const metaData = {
   baseUrl: "https://flynnpedroa.netlify.app/",
-  title: "flynn.pa",
-  pageTitle: "P. A. Flynn's portfolio",
+  title: "flynnpedroa.engineer",
+  pageTitle: "Pedro A Flynn's portfolio",
   name: "Pedro Andres Flynn",
   ogImage: "/favicon.ico",
   description:
