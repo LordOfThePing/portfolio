@@ -1,5 +1,5 @@
 export const metaData = {
-  baseUrl: "https://flynnpedroa.netlify.app/",
+  baseUrl: "https://flynnpedroa.engineer/",
   title: "flynnpedroa.engineer",
   pageTitle: "Pedro A Flynn's portfolio",
   name: "Pedro Andres Flynn",
@@ -9,6 +9,7 @@ export const metaData = {
 };
 
 export const socialLinks = {
+  cv: "https://flynnpedroa.engineer/cv.pdf",
   twitter: "https://x.com/pepeflynn",
   github: "https://github.com/LordOfThePing",
   instagram: "https://www.instagram.com/pedroflynn_/",

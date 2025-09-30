@@ -59,9 +59,6 @@ export default function Page() {
       </div>
       <ProjectsCollage />
 
-    <Link href="/cv.pdf" target="_blank" rel="noopener">
-      Resume
-    </Link>
     </section>
   );
 }
