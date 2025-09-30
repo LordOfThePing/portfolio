@@ -71,14 +71,10 @@ export default function Page() {
         willChange: 'transform'
       }}>
    
-    <Link href="/cv.pdf" target="_blank" rel="noopener">
+      </div>
+    <Link href="/cv_en.pdf" target="_blank" rel="noopener">
       Resume
     </Link>
-        <iframe loading="lazy" style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, border: 'none', padding: 0, margin: 0 }}
-          src="https://www.canva.com/design/DAEvcuLwit0/vsxsCvJ76C6G1dDZK6Ok9Q/view?embed" allowFullScreen={true} allow="fullscreen">
-        </iframe>
-      </div>
-      <a href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAEvcuLwit0&#x2F;vsxsCvJ76C6G1dDZK6Ok9Q&#x2F;view?utm_content=DAEvcuLwit0&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">CV - Pedro Andrés Flynn</a>
     </section>
   );
 }
