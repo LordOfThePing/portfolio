@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { socialLinks } from "./config";
 import ProjectsCollage from "./projectscollage/page";
+import Link from "next/link";
+
 
 export default function Page() {
   return (
@@ -68,6 +70,10 @@ export default function Page() {
         borderRadius: '8px',
         willChange: 'transform'
       }}>
+   
+    <Link href="/cv.pdf" target="_blank" rel="noopener">
+      Resume
+    </Link>
         <iframe loading="lazy" style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, border: 'none', padding: 0, margin: 0 }}
           src="https://www.canva.com/design/DAEvcuLwit0/vsxsCvJ76C6G1dDZK6Ok9Q/view?embed" allowFullScreen={true} allow="fullscreen">
         </iframe>
