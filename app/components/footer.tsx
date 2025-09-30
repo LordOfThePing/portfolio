@@ -3,7 +3,7 @@
 import React from "react";
 import {
   FaXTwitter,
-  FaEnvelope,
+  FaSuitcase,
   FaGithub,
   FaInstagram,
   FaRss,
@@ -25,7 +25,7 @@ function SocialLink({ href, icon: Icon }) {
 function SocialLinks() {
   return (
     <div className="flex text-lg gap-3.5 float-right transition-opacity duration-300 hover:opacity-90">
-      <SocialLink href={socialLinks.cv} icon={FaEnvelope} />
+      <SocialLink href={socialLinks.cv} icon={FaSuitcase} />
       <SocialLink href={socialLinks.twitter} icon={FaXTwitter} />
       <SocialLink href={socialLinks.github} icon={FaGithub} />
       <SocialLink href={socialLinks.instagram} icon={FaInstagram} />
