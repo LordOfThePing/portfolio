@@ -58,7 +58,7 @@ export default function Page() {
       </div>
       <ProjectsCollage />
 
-    <Link href="/cv_en.pdf" target="_blank" rel="noopener">
+    <Link href="/Pedro Flynn [EN].pdf" target="_blank" rel="noopener">
       Resume
     </Link>
     </section>
