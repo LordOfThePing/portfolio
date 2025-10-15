@@ -47,6 +47,8 @@ export default function Introduction() {
             Rocket League
           </a>
           , where i'm a god. (or at least i once was). 
+        </p>
+        <p>
           I strive to improve and surpass myself everyday, trying to focus on things that challenge me and make me grow. 
         </p>
         <p>
