@@ -56,7 +56,7 @@ export default function ProjectsCollage() {
             shortDescription: "upload & download of files implementing transfer protocols",
           },
           {
-            src: "/photos/fiuba-logo-big.jpg",
+            src: "/photos/fiuba-logo-big.jpeg",
             alt: "fiuba",
             href: "https://github.com/LordOfThePing/fiuba_projects",
             title: "FIUBA University Projects",
