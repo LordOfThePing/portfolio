@@ -15,7 +15,7 @@ const sprites = {
 
 export default function CraftingBannerPage() {
   return (
-    <main className="min-h-[60vh] w-full bg-[#091d34] text-white flex items-center justify-center p-4">
+    <main className="min-h-[60vh] w-[70vh] bg-[#091d34] text-white flex items-center justify-center p-4">
       <section className="w-full max-w-[1200px] rounded-md overflow-hidden shadow-xl ring-1 ring-black/10">
         {/* whole banner */}
         <div className="grid grid-cols-12">
