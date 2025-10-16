@@ -44,16 +44,23 @@ export default function ProjectsCollage() {
           {
             src: "/photos/software-architecture.jpg",
             alt: "Azure",
-            href: "https://github.com/LordOfThePing/arquiDelSoftware2C22",
+            href: "https://github.com/LordOfThePing/ASoft-trabajo-practico-2-nonamegroup",
             title: "Software Architecture Metrics",
             shortDescription: "testing endpoints in hosted in Azure with Artillery",
           },
           {
             src: "/photos/rdt.jpg",
             alt: "rdt",
-            href: "https://github.com/FranciscoGauna/TP-distribuidos",
+            href: "https://github.com/LordOfThePing/TP-distribuidos",
             title: "Reliable Data Transfer via UDP",
             shortDescription: "upload & download of files implementing transfer protocols",
+          },
+          {
+            src: "/photos/fiuba-logo-big.jpg",
+            alt: "fiuba",
+            href: "https://github.com/LordOfThePing/fiuba_projects",
+            title: "FIUBA University Projects",
+            shortDescription: "a github repo with links to all my projects in my career",
           },
         ]}
       />
