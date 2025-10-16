@@ -37,7 +37,7 @@ export default function ProjectsCollage() {
           {
             src: "/gifs/irc-chat.gif",
             alt: "Irc-chat",
-            href: "https://github.com/taller-1-fiuba-rust/22C2-Subite-A-La-Papaneta",
+            href: "https://github.com/LordOfThePing/22C2-Subite-A-La-Papaneta",
             title: "IRC Chat",
             shortDescription: "text messaging app for individual and group chat over a network",
           },
