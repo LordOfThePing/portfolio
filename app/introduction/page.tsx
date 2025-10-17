@@ -15,7 +15,7 @@ export default function Introduction() {
         <Image
           src="/fotocv.jpg"
           alt="Profile picture"
-          className="rounded-full block lg:-mt-3 -mt-3 lg:mb-2 mb-10 mx-auto sm:float-right sm:ml-5 sm:mb-5 grayscale hover:grayscale-0"
+          className="rounded-full block lg:mt-0 -mt-0 lg:mb-2 mb-10 mx-auto sm:float-right sm:ml-5 sm:mb-5 grayscale hover:grayscale-0"
           unoptimized
           width={160}
           height={160}

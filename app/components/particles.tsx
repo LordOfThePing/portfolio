@@ -107,8 +107,8 @@ const Particles: React.FC<ParticlesProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const rafRef = useRef<number>();
-  const roRef = useRef<ResizeObserver>();
+  const rafRef = useRef<number | null>(null);
+  const roRef = useRef<ResizeObserver | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
