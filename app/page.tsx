@@ -1,5 +1,6 @@
 import ProjectsCollage from "./projectscollage/page";
 import Introduction from "./introduction/page";
+import ExperienceBanners from "./experiencebanners/page";
 
 
 export default function Page() {
@@ -7,6 +8,7 @@ export default function Page() {
     <section>
       <Introduction />
       
+      <ExperienceBanners />
       <ProjectsCollage />
 
     </section>
