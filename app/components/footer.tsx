@@ -43,7 +43,7 @@ export default function Footer() {
       >
         <LogoLoop
           logos={socialLogos}
-          speed={80}                // igual que el ejemplo
+          speed={30}                // igual que el ejemplo
           direction="left"
           logoHeight={28}            // tamaño del ícono dentro del loop
           gap={40}
@@ -52,7 +52,7 @@ export default function Footer() {
           fadeOut={true}
           // Usa el color del fondo actual para el fade; si tu LogoLoop
           // soporta color por prop, dejamos un fallback neutro:
-          fadeOutColor="transparent"
+          fadeOutColor="#121212"
           ariaLabel="Enlaces sociales"
         />
       </div>
