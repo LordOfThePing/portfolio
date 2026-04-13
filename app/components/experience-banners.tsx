@@ -1,11 +1,9 @@
-// app/experiencebanners/page.tsx
 /* eslint-disable react/no-unescaped-entities */
-import React from "react";
 import Image from "next/image";
 
 type Experience = {
   position: string;
-  companyLogo: string; // path to logo under /public/photos/
+  companyLogo: string;
   dateIn: string;
   dateOut?: string;
   description: string;
@@ -76,7 +74,6 @@ export default function ExperienceBanners() {
               key={`${exp.companyLogo}-${exp.position}-${i}`}
               className="relative overflow-hidden rounded-2xl border border-gray-200/60 dark:border-gray-700/60 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-shadow select-none"
             >
-              {/* Accent bar */}
               <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-indigo-500 to-sky-500" />
 
               <div className="p-5 sm:p-6 pl-6 sm:pl-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

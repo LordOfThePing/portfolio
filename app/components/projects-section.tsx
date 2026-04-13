@@ -1,8 +1,6 @@
-import React from "react";
-import type { Metadata } from "next";
 import { ImageGrid } from "app/components/image-grid";
 
-export default function ProjectsCollage() {
+export default function ProjectsSection() {
   return (
     <section className="w-full py-10">
       <h1 className="text-md sm:text-xl font-bold text-left text-gray-800 dark:text-gray-100 mb-8 select-none">
