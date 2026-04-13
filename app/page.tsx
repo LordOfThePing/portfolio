@@ -48,7 +48,6 @@ export default function Page() {
           pauseOnHover
           scaleOnHover={true}
           fadeOut={true}
-          fadeOutColor="#121212"
           ariaLabel="Enlaces sociales"
         />
       </div>
