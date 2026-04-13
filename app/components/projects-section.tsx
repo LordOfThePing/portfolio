@@ -11,11 +11,11 @@ export default function ProjectsSection() {
         columns={3}
         images={[
           {
-            src: "/photos/tableroTEG.png",
-            alt: "n8n AI Agent on email action in Docker",
+            src: "/photos/whatsapp-bots.jpg",
+            alt: "whatsapp bots",
             href: "https://github.com/LordOfThePing/algo3_tp2",
-            title: "n8n email parser AI Agent in Docker",
-            shortDescription: "an agent developed in a dockerized n8n environment",
+            title: "Whatsapp Bot AI Agent",
+            shortDescription: "Whatsapp bot developed in a dockerized n8n environment",
           },
           {
             src: "/photos/tableroTEG.png",

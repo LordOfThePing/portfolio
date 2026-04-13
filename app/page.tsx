@@ -1,3 +1,4 @@
+import DiplomaPreview from "./components/diploma-preview";
 import ProjectsSection from "./components/projects-section";
 import Introduction from "./components/introduction";
 import ExperienceBanners from "./components/experience-banners";
@@ -55,6 +56,7 @@ export default function Page() {
         <Introduction />
         <ExperienceBanners />
         <ProjectsSection />
+        <DiplomaPreview />
       </section>
     </main>
   );
