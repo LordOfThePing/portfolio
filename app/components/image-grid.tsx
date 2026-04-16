@@ -2,13 +2,14 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { FaGithub } from "react-icons/fa";
+import { FaGithub, FaWhatsapp } from "react-icons/fa";
 
 interface ImageGridProps {
   images: {
     src: string;
     alt: string;
     href: string;
+    whatsappHref?: string;
     title: string;
     shortDescription: string;
   }[];
@@ -23,6 +24,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
     src: string;
     alt: string;
     href: string;
+    whatsappHref?: string;
     title: string;
     shortDescription: string;
   }>(null);
@@ -90,15 +92,28 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
               {selectedImage.shortDescription}
             </p>
 
-            {/* GitHub Button */}
-            <a
-              href={selectedImage.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 transition duration-300 shadow-md"
-            >
-              <FaGithub className="text-white text-2xl" />
-            </a>
+            <div className="mt-4 flex items-center gap-3">
+              <a
+                href={selectedImage.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 transition duration-300 shadow-md"
+                aria-label="Open GitHub repository"
+              >
+                <FaGithub className="text-white text-2xl" />
+              </a>
+              {selectedImage.whatsappHref && (
+                <a
+                  href={selectedImage.whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-600 hover:bg-green-500 transition duration-300 shadow-md"
+                  aria-label="Open WhatsApp chat"
+                >
+                  <FaWhatsapp className="text-white text-2xl" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
       )}

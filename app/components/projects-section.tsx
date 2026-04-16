@@ -14,8 +14,9 @@ export default function ProjectsSection() {
             src: "/photos/whatsapp-bots.jpg",
             alt: "whatsapp bots",
             href: "https://github.com/LordOfThePing/algo3_tp2",
-            title: "Whatsapp Bot AI Agent",
-            shortDescription: "Whatsapp bot developed in a dockerized n8n environment",
+            whatsappHref: "https://wa.me/5493484239630",
+            title: "Whatsapp Sticker Bot",
+            shortDescription: "Whatsapp bot to create stickers from images/videos. Dockerized.",
           },
           {
             src: "/photos/tableroTEG.png",
