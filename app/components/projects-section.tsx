@@ -1,6 +1,7 @@
 import { ImageGrid } from "app/components/image-grid";
 
 export default function ProjectsSection() {
+  
   return (
     <section className="w-full py-10">
       <h1 className="text-md sm:text-xl font-bold text-left text-gray-800 dark:text-gray-100 mb-8 select-none">
@@ -11,10 +12,18 @@ export default function ProjectsSection() {
         columns={3}
         images={[
           {
+            src: "/photos/vuelto.jpeg",
+            alt: "vuelto app",
+            href: "https://github.com/LordOfThePing?tab=repositories",
+            whatsappHref: "https://wa.me/5493484239630",
+            title: "Vuelto App",
+            shortDescription: "Finance tracker and manager via Whatsapp bot",
+          },
+          {
             src: "/photos/whatsapp-bots.jpg",
             alt: "whatsapp bots",
-            href: "https://github.com/LordOfThePing/algo3_tp2",
-            whatsappHref: "https://wa.me/5493484239630",
+            href: "https://github.com/LordOfThePing/sticker_whapbot",
+            whatsappHref: "https://wa.me/5493484204697",
             title: "Whatsapp Sticker Bot",
             shortDescription: "Whatsapp bot to create stickers from images/videos. Dockerized.",
           },
