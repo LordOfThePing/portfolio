@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- Background -->
+  <rect width="400" height="400" fill="#0f172a"/>
+
+  <!-- Grid lines -->
+  <line x1="40" y1="80" x2="370" y2="80" stroke="#1e293b" stroke-width="1"/>
+  <line x1="40" y1="140" x2="370" y2="140" stroke="#1e293b" stroke-width="1"/>
+  <line x1="40" y1="200" x2="370" y2="200" stroke="#1e293b" stroke-width="1"/>
+  <line x1="40" y1="260" x2="370" y2="260" stroke="#1e293b" stroke-width="1"/>
+  <line x1="40" y1="320" x2="370" y2="320" stroke="#1e293b" stroke-width="1"/>
+
+  <!-- Area chart fill (gradient) -->
+  <defs>
+    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="cryptoGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Crypto line area -->
+  <polygon
+    points="40,280 80,250 120,270 160,220 200,240 240,190 280,170 320,140 360,110 360,320 40,320"
+    fill="url(#cryptoGrad)"
+  />
+  <!-- Crypto line -->
+  <polyline
+    points="40,280 80,250 120,270 160,220 200,240 240,190 280,170 320,140 360,110"
+    fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  />
+
+  <!-- Stock area fill -->
+  <polygon
+    points="40,300 80,260 120,290 160,250 200,265 240,210 280,195 320,160 360,130 360,320 40,320"
+    fill="url(#areaGrad)"
+  />
+  <!-- Stock line -->
+  <polyline
+    points="40,300 80,260 120,290 160,250 200,265 240,210 280,195 320,160 360,130"
+    fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+  />
+
+  <!-- Candlesticks (a few) -->
+  <!-- Candle 1 - green -->
+  <rect x="55" y="240" width="10" height="30" fill="#10b981" rx="1"/>
+  <line x1="60" y1="235" x2="60" y2="275" stroke="#10b981" stroke-width="1.5"/>
+  <!-- Candle 2 - red -->
+  <rect x="95" y="255" width="10" height="20" fill="#ef4444" rx="1"/>
+  <line x1="100" y1="248" x2="100" y2="280" stroke="#ef4444" stroke-width="1.5"/>
+  <!-- Candle 3 - green -->
+  <rect x="135" y="235" width="10" height="25" fill="#10b981" rx="1"/>
+  <line x1="140" y1="228" x2="140" y2="265" stroke="#10b981" stroke-width="1.5"/>
+  <!-- Candle 4 - green -->
+  <rect x="175" y="218" width="10" height="28" fill="#10b981" rx="1"/>
+  <line x1="180" y1="212" x2="180" y2="252" stroke="#10b981" stroke-width="1.5"/>
+  <!-- Candle 5 - red -->
+  <rect x="215" y="200" width="10" height="22" fill="#ef4444" rx="1"/>
+  <line x1="220" y1="194" x2="220" y2="228" stroke="#ef4444" stroke-width="1.5"/>
+
+  <!-- Bitcoin symbol (top-left) -->
+  <circle cx="55" cy="48" r="22" fill="#f59e0b" opacity="0.15"/>
+  <text x="55" y="55" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#f59e0b" text-anchor="middle">₿</text>
+
+  <!-- Stock chart icon (top-center area) -->
+  <circle cx="200" cy="48" r="22" fill="#10b981" opacity="0.15"/>
+  <polyline points="188,58 196,44 204,52 212,38" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Ethereum symbol (top-right) -->
+  <circle cx="345" cy="48" r="22" fill="#818cf8" opacity="0.15"/>
+  <text x="345" y="55" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#818cf8" text-anchor="middle">Ξ</text>
+
+  <!-- Title -->
+  <text x="200" y="375" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#94a3b8" text-anchor="middle" letter-spacing="2">STOCK &amp; CRYPTO TRACKER</text>
+
+  <!-- Live dot -->
+  <circle cx="358" cy="130" r="5" fill="#10b981"/>
+  <circle cx="358" cy="130" r="9" fill="#10b981" opacity="0.3"/>
+
+  <!-- Y-axis line -->
+  <line x1="40" y1="70" x2="40" y2="330" stroke="#334155" stroke-width="1"/>
+  <!-- X-axis line -->
+  <line x1="40" y1="330" x2="370" y2="330" stroke="#334155" stroke-width="1"/>
+</svg>

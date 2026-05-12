@@ -16,8 +16,17 @@ export default function ProjectsSection() {
             alt: "vuelto app",
             href: "https://github.com/LordOfThePing?tab=repositories",
             whatsappHref: "https://wa.me/5493484239630",
+            webHref: "https://mivuelto.com/",
             title: "Vuelto App",
             shortDescription: "Finance tracker and manager via Whatsapp bot",
+          },
+          {
+            src: "/photos/stock-tracker.svg",
+            alt: "stock and crypto tracker",
+            href: "https://github.com/LordOfThePing/stockTracker",
+            webHref: "http://tracker.flynnpedroa.engineer/",
+            title: "Stock & Crypto Tracker",
+            shortDescription: "Real-time stock and cryptocurrency price tracker with charts and portfolio management",
           },
           {
             src: "/photos/whatsapp-bots.jpg",

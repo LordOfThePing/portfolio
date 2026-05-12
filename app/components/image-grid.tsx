@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { FaGithub, FaWhatsapp } from "react-icons/fa";
+import { FaGithub, FaWhatsapp, FaGlobe } from "react-icons/fa";
 
 interface ImageGridProps {
   images: {
@@ -10,6 +10,7 @@ interface ImageGridProps {
     alt: string;
     href: string;
     whatsappHref?: string;
+    webHref?: string;
     title: string;
     shortDescription: string;
   }[];
@@ -25,6 +26,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
     alt: string;
     href: string;
     whatsappHref?: string;
+    webHref?: string;
     title: string;
     shortDescription: string;
   }>(null);
@@ -111,6 +113,17 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
                   aria-label="Open WhatsApp chat"
                 >
                   <FaWhatsapp className="text-white text-2xl" />
+                </a>
+              )}
+              {selectedImage.webHref && (
+                <a
+                  href={selectedImage.webHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-500 transition duration-300 shadow-md"
+                  aria-label="Open website"
+                >
+                  <FaGlobe className="text-white text-2xl" />
                 </a>
               )}
             </div>
