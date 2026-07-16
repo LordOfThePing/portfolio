@@ -28,6 +28,10 @@ yarn-error.log*
 
 # env files
 .env
+.env*.local
+
+# local linktree metrics (dev-only fallback for Netlify Blobs)
+.metrics-dev.json
 
 # vercel
 .vercel
@@ -37,3 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 package-lock.json
+.gstack/

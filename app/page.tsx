@@ -10,11 +10,13 @@ import {
   FaGithub,
   FaInstagram,
   FaLinkedinIn,
+  FaLink,
 } from "react-icons/fa6";
 import { TbMailFilled } from "react-icons/tb";
 import { socialLinks } from "./config";
 
 const socialLogos = [
+  { node: <FaLink aria-hidden="true" />, title: "All my links", href: "/links" },
   { node: <FaSuitcase aria-hidden="true" />, title: "Resume / CV", href: socialLinks.cv },
   { node: <FaXTwitter aria-hidden="true" />, title: "X (Twitter)", href: socialLinks.twitter },
   { node: <FaGithub aria-hidden="true" />, title: "GitHub", href: socialLinks.github },

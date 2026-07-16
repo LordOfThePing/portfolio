@@ -6,10 +6,10 @@ const BaseUrl = metaData.baseUrl.endsWith("/")
   : `${metaData.baseUrl}/`;
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const lastModified = new Date().toISOString().split("T")[0];
+
   return [
-    {
-      url: BaseUrl,
-      lastModified: new Date().toISOString().split("T")[0],
-    },
+    { url: BaseUrl, lastModified },
+    { url: `${BaseUrl}links`, lastModified },
   ];
 }
