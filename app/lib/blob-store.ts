@@ -7,39 +7,40 @@ import path from "node:path";
  * Shared Netlify Blobs plumbing.
  *
  * On Netlify this needs no setup, no account and no env vars — the runtime
- * wires it up automatically. Under `next dev` Blobs isn't available, so callers
- * fall back to a local JSON file (gitignored) and local testing keeps working.
+ * wires it up automatically. It's a global (site-wide) store, so its data
+ * PERSISTS ACROSS DEPLOYS — new deploys never wipe your stats or config.
+ *
+ * Under `next dev` Blobs isn't available, so callers fall back to a local JSON
+ * file (gitignored) and local testing keeps working.
  *
  * In production a missing Blobs backend is a real failure, not something to
  * paper over: writing to a serverless filesystem would look like it worked and
  * then vanish on the next request. So we throw instead of falling back.
+ *
+ * ⚠️  Never cache the returned Store across requests. On Netlify's Next.js
+ * runtime the Blobs auth token is short-lived and refreshed per request. A
+ * store held at module scope keeps its first token and later fails every
+ * read/write with "Failed to decode token: Token expired" — which looks exactly
+ * like data loss. getStore() is a cheap factory that re-reads the current token,
+ * so we build a fresh store on every call.
  */
 
 const isProduction = () => process.env.NODE_ENV === "production";
 
-const stores = new Map<string, Store | null>();
-
 /** A Blobs store, or null when running locally (caller should use the dev file). */
 export function blobStore(name: string): Store | null {
-  const cached = stores.get(name);
-  if (cached !== undefined) return cached;
-
-  let store: Store | null;
   try {
     // Strong consistency: a write must be visible to the next read, otherwise
     // rapid updates read a stale value and overwrite each other.
-    store = getStore({ name, consistency: "strong" });
+    return getStore({ name, consistency: "strong" });
   } catch (error) {
     if (isProduction()) {
       throw new Error(
         `Netlify Blobs is unavailable in production (store "${name}"): ${error}`,
       );
     }
-    store = null;
+    return null;
   }
-
-  stores.set(name, store);
-  return store;
 }
 
 export const devFilePath = (name: string) =>
