@@ -1,9 +1,24 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
-import type { LinkItem, LinksProfile } from "app/links-config";
-import { ICONS } from "./icons";
+import type { LinksProfile } from "app/links-config";
+
+/**
+ * The icon arrives already rendered from the server (see page.tsx). That keeps
+ * the ~210-icon registry out of this bundle: visitors download the handful of
+ * SVGs actually on the page instead of every icon the admin picker offers.
+ */
+export type RenderedLink = {
+  id: string;
+  label: string;
+  description?: string;
+  href: string;
+  featured?: boolean;
+  icon: ReactNode;
+  /** Preset color tint for the icon chip, or undefined for the theme default. */
+  iconStyle?: CSSProperties;
+};
 
 const VISITOR_FLAG = "pf_seen_links";
 
@@ -44,8 +59,7 @@ function useVisitTracking(): void {
   }, []);
 }
 
-function LinkButton({ link }: { link: LinkItem }) {
-  const Icon = ICONS[link.icon];
+function LinkButton({ link }: { link: RenderedLink }) {
   const isExternal = link.href.startsWith("http") || link.href.startsWith("mailto:");
 
   return (
@@ -67,13 +81,18 @@ function LinkButton({ link }: { link: LinkItem }) {
       <span
         className={[
           "flex-none grid place-items-center w-11 h-11 rounded-xl text-xl transition-transform duration-200 group-hover:scale-110",
-          link.featured
-            ? "bg-[#47a3f3]/15 text-[#47a3f3]"
-            : "bg-black/[0.05] dark:bg-white/[0.08] text-[#1C1C1C] dark:text-[#D4D4D4]",
+          // A chosen color (inline style) wins; otherwise fall back to the
+          // featured tint or the neutral chip.
+          link.iconStyle
+            ? ""
+            : link.featured
+              ? "bg-[#47a3f3]/15 text-[#47a3f3]"
+              : "bg-black/[0.05] dark:bg-white/[0.08] text-[#1C1C1C] dark:text-[#D4D4D4]",
         ].join(" ")}
+        style={link.iconStyle}
         aria-hidden="true"
       >
-        <Icon />
+        {link.icon}
       </span>
 
       <span className="flex flex-col min-w-0 flex-1">
@@ -101,7 +120,7 @@ export default function LinksClient({
   links,
   profile,
 }: {
-  links: LinkItem[];
+  links: RenderedLink[];
   profile: LinksProfile;
 }) {
   useVisitTracking();

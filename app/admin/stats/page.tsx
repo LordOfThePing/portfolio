@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { isAdmin } from "app/lib/admin-auth";
-import { CLICK_PREFIX, KEY, readAll } from "app/lib/metrics";
+import { CLICK_PREFIX, KEY, readRange, utcDay, utcDayAgo } from "app/lib/metrics";
 import { readConfig } from "app/lib/links-store";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,16 @@ export const metadata: Metadata = {
  * against both #ffffff and #121212 surfaces.
  */
 const BAR = "#3b82f6";
+
+/** `from = null` means all time. Order here is the order of the filter tabs. */
+const RANGES = {
+  today: { label: "Today", days: 1 },
+  "7d": { label: "Last 7 days", days: 7 },
+  "30d": { label: "Last 30 days", days: 30 },
+  all: { label: "All time", days: null },
+} as const;
+
+type RangeKey = keyof typeof RANGES;
 
 const nf = new Intl.NumberFormat("en-US");
 
@@ -62,11 +72,22 @@ function BarRow({ row, max }: { row: Row; max: number }) {
   );
 }
 
-export default async function StatsPage() {
+export default async function StatsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
   // The layout already gates rendering; this guards the data read itself.
   if (!(await isAdmin())) return null;
 
-  const [counters, config] = await Promise.all([readAll(), readConfig()]);
+  const { range } = await searchParams;
+  const rangeKey: RangeKey = range && range in RANGES ? (range as RangeKey) : "all";
+  const { label: rangeLabel, days } = RANGES[rangeKey];
+
+  const to = utcDay();
+  const from = days === null ? null : utcDayAgo(days - 1);
+
+  const [counters, config] = await Promise.all([readRange(from, to), readConfig()]);
   const knownIds = new Set(config.links.map((link) => link.id));
 
   const visits = counters[KEY.visits] ?? 0;
@@ -99,14 +120,35 @@ export default async function StatsPage() {
 
   return (
     <>
-      <div className="mb-6">
+      <div className="mb-5">
         <h1 className="text-xl font-medium text-black dark:text-white">
           Linktree stats
         </h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-          All time · <span className="font-mono">/links</span>
+          {rangeLabel} · <span className="font-mono">/links</span>
         </p>
       </div>
+
+      <nav className="flex flex-wrap gap-1 mb-6" aria-label="Date range">
+        {(Object.keys(RANGES) as RangeKey[]).map((key) => {
+          const active = key === rangeKey;
+          return (
+            <a
+              key={key}
+              href={`/admin/stats?range=${key}`}
+              aria-current={active ? "page" : undefined}
+              className={[
+                "rounded-lg px-3 py-1.5 text-sm no-underline transition-colors",
+                active
+                  ? "bg-black dark:bg-white text-white dark:text-black font-medium"
+                  : "border border-black/10 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.08]",
+              ].join(" ")}
+            >
+              {RANGES[key].label}
+            </a>
+          );
+        })}
+      </nav>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         <Stat label="Visits" value={nf.format(visits)} />
@@ -121,7 +163,7 @@ export default async function StatsPage() {
 
       {totalClicks === 0 && visits === 0 ? (
         <p className="text-sm text-neutral-500 dark:text-neutral-400 rounded-xl border border-black/10 dark:border-white/10 p-4">
-          No data yet. Open{" "}
+          No data in this range. Open{" "}
           <a href="/links" className="underline underline-offset-4">
             /links
           </a>{" "}
@@ -140,7 +182,7 @@ export default async function StatsPage() {
         /links. <strong className="font-medium">Visitors</strong> counts each
         device once. <strong className="font-medium">Click rate</strong> is
         clicks ÷ visits, so it can exceed 100% when people tap more than one
-        link.
+        link. Days are counted in UTC.
       </p>
     </>
   );

@@ -9,10 +9,11 @@ import {
 import {
   links as seedLinks,
   linksProfile as seedProfile,
-  type LinkIcon,
   type LinkItem,
   type LinksProfile,
 } from "app/links-config";
+import { isLinkIcon, type LinkIcon } from "app/links/icon-names";
+import { isLinkColor } from "app/links/colors";
 
 export type { LinksProfile };
 
@@ -33,19 +34,6 @@ export type LinksConfig = {
   profile: LinksProfile;
   links: LinkItem[];
 };
-
-export const ICON_OPTIONS: LinkIcon[] = [
-  "cv",
-  "email",
-  "github",
-  "instagram",
-  "linkedin",
-  "twitter",
-  "whatsapp",
-  "globe",
-  "chart",
-  "rocket",
-];
 
 export const LIMITS = {
   links: 50,
@@ -125,7 +113,7 @@ export function validateConfig(input: unknown): {
     const id = clamp(str(item.id).toLowerCase(), LIMITS.id);
     const label = clamp(str(item.label), LIMITS.label);
     const href = clamp(str(item.href), LIMITS.href);
-    const icon = str(item.icon) as LinkIcon;
+    const icon = str(item.icon);
 
     if (!id) {
       errors.push(`${position}: id can't be empty.`);
@@ -155,10 +143,12 @@ export function validateConfig(input: unknown): {
       );
       return;
     }
-    if (!ICON_OPTIONS.includes(icon)) {
+    if (!isLinkIcon(icon)) {
       errors.push(`${position} ("${id}"): unknown icon "${icon}".`);
       return;
     }
+
+    const color = str(item.color);
 
     seen.add(id);
     links.push({
@@ -166,6 +156,8 @@ export function validateConfig(input: unknown): {
       label,
       href,
       icon,
+      // Unknown/absent color just falls back to the neutral default.
+      color: isLinkColor(color) ? color : undefined,
       description: clamp(str(item.description), LIMITS.description) || undefined,
       enabled: item.enabled !== false,
       featured: item.featured === true,
