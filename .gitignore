@@ -30,8 +30,9 @@ yarn-error.log*
 .env
 .env*.local
 
-# local linktree metrics (dev-only fallback for Netlify Blobs)
+# local linktree data (dev-only fallback for Netlify Blobs)
 .metrics-dev.json
+.links-dev.json
 
 # vercel
 .vercel

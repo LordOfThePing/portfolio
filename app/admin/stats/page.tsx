@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { isAdmin, isConfigured } from "app/lib/admin-auth";
+import { isAdmin } from "app/lib/admin-auth";
 import { CLICK_PREFIX, KEY, readAll } from "app/lib/metrics";
-import { links } from "app/links-config";
-import { logout } from "../actions";
-import LoginForm from "./login-form";
+import { readConfig } from "app/lib/links-store";
 
 export const dynamic = "force-dynamic";
 
@@ -65,24 +63,23 @@ function BarRow({ row, max }: { row: Row; max: number }) {
 }
 
 export default async function StatsPage() {
-  if (!(await isAdmin())) {
-    return <LoginForm configured={isConfigured()} />;
-  }
+  // The layout already gates rendering; this guards the data read itself.
+  if (!(await isAdmin())) return null;
 
-  const counters = await readAll();
-  const knownIds = new Set(links.map((link) => link.id));
+  const [counters, config] = await Promise.all([readAll(), readConfig()]);
+  const knownIds = new Set(config.links.map((link) => link.id));
 
   const visits = counters[KEY.visits] ?? 0;
   const visitors = counters[KEY.visitors] ?? 0;
 
-  const rows: Row[] = links.map((link) => ({
+  const rows: Row[] = config.links.map((link) => ({
     id: link.id,
     label: link.label,
     clicks: counters[KEY.click(link.id)] ?? 0,
     note: link.enabled === false ? "hidden" : undefined,
   }));
 
-  // Counters whose link was deleted from the config — still worth showing.
+  // Counters whose link was deleted or renamed — still worth showing.
   const orphans: Row[] = Object.entries(counters)
     .filter(
       ([key]) =>
@@ -101,24 +98,14 @@ export default async function StatsPage() {
   const clickRate = visits > 0 ? (totalClicks / visits) * 100 : 0;
 
   return (
-    <section className="py-4 w-full">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-xl font-medium text-black dark:text-white">
-            Linktree stats
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-            All time · <span className="font-mono">/links</span>
-          </p>
-        </div>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="text-sm rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-neutral-600 dark:text-neutral-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors"
-          >
-            Log out
-          </button>
-        </form>
+    <>
+      <div className="mb-6">
+        <h1 className="text-xl font-medium text-black dark:text-white">
+          Linktree stats
+        </h1>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          All time · <span className="font-mono">/links</span>
+        </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
@@ -155,6 +142,6 @@ export default async function StatsPage() {
         clicks ÷ visits, so it can exceed 100% when people tap more than one
         link.
       </p>
-    </section>
+    </>
   );
 }

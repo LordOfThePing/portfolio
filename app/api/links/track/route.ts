@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { increment, KEY } from "app/lib/metrics";
-import { links } from "app/links-config";
+import { readConfig } from "app/lib/links-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/** Only ids that exist in the config may become counter keys. */
-const knownIds = new Set(links.map((link) => link.id));
 
 type Payload = {
   type?: unknown;
@@ -30,10 +27,18 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.type === "click") {
-    // Reject unknown ids, otherwise anyone could POST junk and grow the store.
-    if (typeof body.id !== "string" || !knownIds.has(body.id)) {
+    if (typeof body.id !== "string") {
       return NextResponse.json({ error: "Unknown link id" }, { status: 400 });
     }
+
+    // Ids are checked against the live config, so only links that actually
+    // exist can create counter keys. Without this, anyone could POST junk and
+    // grow the store without bound.
+    const { links } = await readConfig();
+    if (!links.some((link) => link.id === body.id)) {
+      return NextResponse.json({ error: "Unknown link id" }, { status: 400 });
+    }
+
     await increment([KEY.click(body.id)]);
     return new NextResponse(null, { status: 204 });
   }

@@ -42,8 +42,15 @@ export type LinkItem = {
   featured?: boolean;
 };
 
+export type LinksProfile = {
+  avatar: string;
+  name: string;
+  handle: string;
+  bio: string;
+};
+
 /** Header shown above the buttons. */
-export const linksProfile = {
+export const linksProfile: LinksProfile = {
   avatar: "/fotocv.jpg",
   name: "Pedro Andrés Flynn",
   handle: "@pepeflynn",

@@ -2,33 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
-import {
-  FaSuitcase,
-  FaXTwitter,
-  FaGithub,
-  FaInstagram,
-  FaLinkedinIn,
-  FaWhatsapp,
-  FaGlobe,
-  FaChartLine,
-  FaRocket,
-} from "react-icons/fa6";
-import { TbMailFilled } from "react-icons/tb";
-import type { IconType } from "react-icons";
-import { linksProfile, type LinkIcon, type LinkItem } from "app/links-config";
-
-const ICONS: Record<LinkIcon, IconType> = {
-  cv: FaSuitcase,
-  email: TbMailFilled,
-  github: FaGithub,
-  instagram: FaInstagram,
-  linkedin: FaLinkedinIn,
-  twitter: FaXTwitter,
-  whatsapp: FaWhatsapp,
-  globe: FaGlobe,
-  chart: FaChartLine,
-  rocket: FaRocket,
-};
+import type { LinkItem, LinksProfile } from "app/links-config";
+import { ICONS } from "./icons";
 
 const VISITOR_FLAG = "pf_seen_links";
 
@@ -122,30 +97,42 @@ function LinkButton({ link }: { link: LinkItem }) {
   );
 }
 
-export default function LinksClient({ links }: { links: LinkItem[] }) {
+export default function LinksClient({
+  links,
+  profile,
+}: {
+  links: LinkItem[];
+  profile: LinksProfile;
+}) {
   useVisitTracking();
 
   return (
     <div className="w-full max-w-[460px] mx-auto">
       <header className="flex flex-col items-center text-center mb-8">
-        <Image
-          src={linksProfile.avatar}
-          alt={linksProfile.name}
-          width={96}
-          height={96}
-          className="rounded-full mb-4"
-          unoptimized
-          priority
-        />
+        {profile.avatar && (
+          <Image
+            src={profile.avatar}
+            alt={profile.name}
+            width={96}
+            height={96}
+            className="rounded-full mb-4"
+            unoptimized
+            priority
+          />
+        )}
         <h1 className="text-xl font-medium text-black dark:text-white">
-          {linksProfile.name}
+          {profile.name}
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-          {linksProfile.handle}
-        </p>
-        <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-3 text-balance leading-relaxed">
-          {linksProfile.bio}
-        </p>
+        {profile.handle && (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+            {profile.handle}
+          </p>
+        )}
+        {profile.bio && (
+          <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-3 text-balance leading-relaxed">
+            {profile.bio}
+          </p>
+        )}
       </header>
 
       <nav className="flex flex-col gap-3" aria-label="My links">

@@ -3,13 +3,14 @@ import crypto from "node:crypto";
 import { cookies } from "next/headers";
 
 /**
- * Admin session handling for the stats dashboard.
+ * Admin session handling for the stats dashboard and the config editor.
  *
- * The password lives in the ADMIN_PASSWORD env var and never reaches the
- * browser. On success we hand out an HMAC-signed cookie so you stay logged in
- * on your phone; the cookie proves "someone knew the password" and nothing else.
+ * Credentials live in the ADMIN_USER / ADMIN_PASSWORD env vars and never reach
+ * the browser. On success we hand out an HMAC-signed cookie so you stay logged
+ * in on your phone; the cookie proves "someone knew the credentials" and
+ * nothing else.
  *
- * The signing key is derived from the password, so changing ADMIN_PASSWORD
+ * The signing key is derived from both values, so changing either one
  * automatically invalidates every existing session.
  */
 
@@ -17,15 +18,24 @@ export const ADMIN_COOKIE = "pf_admin";
 const SESSION_DAYS = 30;
 const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
 
+const username = () => process.env.ADMIN_USER ?? "";
 const password = () => process.env.ADMIN_PASSWORD ?? "";
 
-/** No password configured = admin is fully closed, not wide open. */
-export const isConfigured = () => password().length > 0;
+/** Both vars required: a half-configured admin stays closed, never wide open. */
+export const isConfigured = () => username().length > 0 && password().length > 0;
+
+/** Names the vars still missing, for the login screen to show. */
+export function missingEnvVars(): string[] {
+  const missing: string[] = [];
+  if (!username()) missing.push("ADMIN_USER");
+  if (!password()) missing.push("ADMIN_PASSWORD");
+  return missing;
+}
 
 function signingKey(): Buffer {
   return crypto
     .createHash("sha256")
-    .update(`${process.env.ADMIN_SECRET ?? ""}:${password()}`)
+    .update(`${process.env.ADMIN_SECRET ?? ""}:${username()}:${password()}`)
     .digest();
 }
 
@@ -36,9 +46,16 @@ function safeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ha, hb);
 }
 
-export function verifyPassword(input: string): boolean {
+/**
+ * Both comparisons are evaluated before they're combined, so a wrong username
+ * costs the same as a wrong password and timing can't reveal which half was
+ * right. The login screen reports one generic error for the same reason.
+ */
+export function verifyCredentials(user: string, pass: string): boolean {
   if (!isConfigured()) return false;
-  return safeEqual(input, password());
+  const userOk = safeEqual(user, username());
+  const passOk = safeEqual(pass, password());
+  return userOk && passOk;
 }
 
 function sign(payload: string): string {
