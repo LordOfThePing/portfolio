@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStore } from "@netlify/blobs";
 import { isAdmin } from "app/lib/admin-auth";
+import { readRange, utcDay, utcDayAgo } from "app/lib/metrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,12 +54,27 @@ export async function GET() {
     result.read = readBack === value ? "ok (matched)" : `mismatch: ${readBack}`;
 
     const { blobs } = await store.list();
-    result.list = { ok: true, keyCount: blobs.length };
+    // The ACTUAL keys in the store (minus our own probe key). This shows the
+    // exact format the writer produced — bucketed "YYYY-MM-DD#metric" or not.
+    result.keys = blobs
+      .map((b) => b.key)
+      .filter((k) => !k.startsWith("__diag__"))
+      .sort();
 
     await store.delete(key);
     result.cleanup = "ok";
 
-    result.verdict = "Blobs is WORKING — metrics should record. The bug is elsewhere.";
+    // Run the EXACT aggregation the Stats page uses, so we see what it sees.
+    const today = utcDay();
+    result.readRange = {
+      allTime: await readRange(null, today),
+      today: await readRange(today, today),
+      last7d: await readRange(utcDayAgo(6), today),
+      to: today,
+    };
+
+    result.verdict =
+      "Blobs is WORKING. Compare `keys` (what's stored) with `readRange` (what Stats computes).";
   } catch (error) {
     result.verdict = "Blobs FAILED — this is why every counter reads 0.";
     result.error = describe(error);
