@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { increment, KEY } from "app/lib/metrics";
+import { recordClick } from "app/lib/metrics";
 import { isSafeHref, readConfig } from "app/lib/links-store";
 
 export const runtime = "nodejs";
@@ -28,7 +28,7 @@ export async function GET(
     return NextResponse.redirect(new URL("/links", request.url));
   }
 
-  await increment([KEY.click(link.id)]);
+  await recordClick(link.id);
 
   // Internal paths ("/", "/foo") resolve against this origin; external URLs
   // (https, mailto) pass through unchanged.

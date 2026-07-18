@@ -1,11 +1,5 @@
 import "server-only";
-import {
-  blobStore,
-  devFilePath,
-  devReadJson,
-  devWriteJson,
-  withLock,
-} from "./blob-store";
+import { supabase } from "./supabase";
 import {
   links as seedLinks,
   linksProfile as seedProfile,
@@ -18,17 +12,16 @@ import { isLinkColor } from "app/links/colors";
 export type { LinksProfile };
 
 /**
- * The live Linktree config, edited at /admin/config.
+ * The live Linktree config, edited at /admin/config, stored as a single JSONB
+ * row in Supabase (table `link_config`, id = 1).
  *
  * links-config.ts is the seed: until something is saved from the admin UI, the
- * store is empty and /links renders those defaults. After the first save, this
- * store is the source of truth and the file is only used by "Reset to defaults".
+ * row is empty and /links renders those defaults. After the first save, this
+ * row is the source of truth and the file is only used by "Reset to defaults".
  */
 
-const STORE_NAME = "linktree-config";
-const CONFIG_KEY = "config";
-const DEV_FILE = devFilePath("links");
-const DEV_LOCK = "__links_dev_file__";
+const CONFIG_TABLE = "link_config";
+const CONFIG_ID = 1;
 
 export type LinksConfig = {
   profile: LinksProfile;
@@ -167,16 +160,17 @@ export function validateConfig(input: unknown): {
   return { config: { profile, links }, errors };
 }
 
-const store = () => blobStore(STORE_NAME);
-
 /** The live config. Falls back to the seed defaults when nothing is saved yet. */
 export async function readConfig(): Promise<LinksConfig> {
   try {
-    const blobs = store();
-    const raw = blobs
-      ? await blobs.get(CONFIG_KEY, { type: "json" })
-      : await devReadJson<LinksConfig | null>(DEV_FILE, null);
+    const { data, error } = await supabase()
+      .from(CONFIG_TABLE)
+      .select("data")
+      .eq("id", CONFIG_ID)
+      .maybeSingle();
+    if (error) throw error;
 
+    const raw = data?.data ?? null;
     if (!raw) return defaultConfig();
 
     const { config, errors } = validateConfig(raw);
@@ -190,23 +184,21 @@ export async function readConfig(): Promise<LinksConfig> {
   }
 }
 
+/** Throws on failure so the admin "Save" surfaces a real error, not a silent no-op. */
 export async function writeConfig(config: LinksConfig): Promise<void> {
-  const blobs = store();
-  if (!blobs) {
-    await withLock(DEV_LOCK, () => devWriteJson(DEV_FILE, config));
-    return;
-  }
-  await withLock(CONFIG_KEY, () => blobs.setJSON(CONFIG_KEY, config));
+  const { error } = await supabase()
+    .from(CONFIG_TABLE)
+    .upsert({ id: CONFIG_ID, data: config, updated_at: new Date().toISOString() });
+  if (error) throw error;
 }
 
 /** Drops the saved config so /links falls back to links-config.ts again. */
 export async function clearConfig(): Promise<void> {
-  const blobs = store();
-  if (!blobs) {
-    await withLock(DEV_LOCK, () => devWriteJson(DEV_FILE, null));
-    return;
-  }
-  await withLock(CONFIG_KEY, () => blobs.delete(CONFIG_KEY));
+  const { error } = await supabase()
+    .from(CONFIG_TABLE)
+    .delete()
+    .eq("id", CONFIG_ID);
+  if (error) throw error;
 }
 
 export const visibleLinks = (config: LinksConfig): LinkItem[] =>

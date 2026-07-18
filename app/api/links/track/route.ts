@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { increment, KEY } from "app/lib/metrics";
+import { recordClick, recordVisit } from "app/lib/metrics";
 import { readConfig } from "app/lib/links-store";
 
 export const runtime = "nodejs";
@@ -20,9 +20,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.type === "visit") {
-    const keys: string[] = [KEY.visits];
-    if (body.firstVisit === true) keys.push(KEY.visitors);
-    await increment(keys);
+    await recordVisit(body.firstVisit === true);
     return new NextResponse(null, { status: 204 });
   }
 
@@ -39,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unknown link id" }, { status: 400 });
     }
 
-    await increment([KEY.click(body.id)]);
+    await recordClick(body.id);
     return new NextResponse(null, { status: 204 });
   }
 
