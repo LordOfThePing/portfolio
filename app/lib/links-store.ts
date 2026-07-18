@@ -1,5 +1,5 @@
 import "server-only";
-import { supabase } from "./supabase";
+import { describeError, supabase } from "./supabase";
 import {
   links as seedLinks,
   linksProfile as seedProfile,
@@ -189,7 +189,7 @@ export async function writeConfig(config: LinksConfig): Promise<void> {
   const { error } = await supabase()
     .from(CONFIG_TABLE)
     .upsert({ id: CONFIG_ID, data: config, updated_at: new Date().toISOString() });
-  if (error) throw error;
+  if (error) throw new Error(describeError(error));
 }
 
 /** Drops the saved config so /links falls back to links-config.ts again. */
@@ -198,7 +198,7 @@ export async function clearConfig(): Promise<void> {
     .from(CONFIG_TABLE)
     .delete()
     .eq("id", CONFIG_ID);
-  if (error) throw error;
+  if (error) throw new Error(describeError(error));
 }
 
 export const visibleLinks = (config: LinksConfig): LinkItem[] =>

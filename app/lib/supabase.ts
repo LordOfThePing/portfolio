@@ -20,6 +20,29 @@ let cached: SupabaseClient | null = null;
 
 export const isSupabaseConfigured = (): boolean => Boolean(url && serviceKey);
 
+/**
+ * Turns a Supabase/PostgREST error (a plain object, so `${error}` prints the
+ * useless "[object Object]") into a readable one-line message with the code.
+ */
+export function describeError(error: unknown): string {
+  if (error && typeof error === "object") {
+    const e = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+    };
+    const parts = [
+      e.message,
+      e.details,
+      e.hint,
+      e.code ? `(code ${e.code})` : null,
+    ].filter(Boolean);
+    if (parts.length) return parts.join(" — ");
+  }
+  return String(error);
+}
+
 export function supabase(): SupabaseClient {
   if (!url || !serviceKey) {
     throw new Error(
