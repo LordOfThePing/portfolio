@@ -13,8 +13,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * one client at module scope is safe and avoids rebuilding it per request.
  */
 
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Normalize common env-var mistakes: a trailing slash makes supabase-js build
+// "…supabase.co//rest/v1/…", which PostgREST rejects as an invalid path
+// (PGRST125); stray whitespace/newlines break auth. Also tolerate a pasted
+// "/rest/v1" suffix. Strip all of it so the URL is just scheme + host.
+const url = process.env.SUPABASE_URL?.trim()
+  .replace(/\/rest\/v1\/?$/, "")
+  .replace(/\/+$/, "");
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
 let cached: SupabaseClient | null = null;
 
