@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStore } from "@netlify/blobs";
 import { isAdmin } from "app/lib/admin-auth";
-import { readRange, utcDay, utcDayAgo } from "app/lib/metrics";
+import { increment, readRange, utcDay, utcDayAgo } from "app/lib/metrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,12 +54,35 @@ export async function GET() {
     result.read = readBack === value ? "ok (matched)" : `mismatch: ${readBack}`;
 
     const { blobs } = await store.list();
-    // The ACTUAL keys in the store (minus our own probe key). This shows the
-    // exact format the writer produced — bucketed "YYYY-MM-DD#metric" or not.
     result.keys = blobs
       .map((b) => b.key)
       .filter((k) => !k.startsWith("__diag__"))
       .sort();
+
+    // Definitive writer test: call the REAL deployed increment() with a unique
+    // metric, then read the two possible key shapes directly (not via list, so
+    // consistency isn't a factor). Whichever key holds the value tells us the
+    // exact format the production writer produces.
+    const probeMetric = `__probe__${Date.now()}`;
+    const bucketedKey = `${utcDay()}#${probeMetric}`;
+    await increment([probeMetric]);
+    const [bucketedVal, plainVal] = await Promise.all([
+      store.get(bucketedKey, { type: "text" }),
+      store.get(probeMetric, { type: "text" }),
+    ]);
+    result.probe = {
+      metricPassed: probeMetric,
+      bucketedKey,
+      bucketedKeyValue: bucketedVal,
+      plainKeyValue: plainVal,
+      writerFormat:
+        bucketedVal != null
+          ? "BUCKETED (date#metric) — matches the reader. Good."
+          : plainVal != null
+            ? "PLAIN (metric only) — reader expects bucketed, so it's ignored."
+            : "NEITHER — writer dropped the metric (bare-date bug).",
+    };
+    await Promise.all([store.delete(bucketedKey), store.delete(probeMetric)]);
 
     await store.delete(key);
     result.cleanup = "ok";
