@@ -32,9 +32,17 @@ function formatMonthYear(iso: string) {
 
 const EXPERIENCES: Experience[] = [
   {
+    position: "Senior Software Engineer",
+    companyLogo: "/photos/blend360-logo.png",
+    dateIn: "2026-07-01",
+    description:
+      "Client: Blackstone. Developer Experience team — improving developer workflows through new technologies, AI, agentic programming, loops and tech vanguardism.",
+  },
+  {
     position: "Full Stack Engineer",
     companyLogo: "/photos/globant-logo.png",
     dateIn: "2024-11-01",
+    dateOut: "2026-07-01",
     description:
       "Contractor for ExxonMobil account. Support for Corporate Financial Services apps: Vendors, On-Premise, Cloud-Based, SaaS.",
   },
