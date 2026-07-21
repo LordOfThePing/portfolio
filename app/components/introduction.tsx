@@ -22,9 +22,9 @@ export default function Introduction() {
           projects and thoughts in one place.
         </p>
         <p>
-          currently a FullStack Engineer at{" "}
-          <a href={socialLinks.globant} target="_blank" rel="noopener noreferrer" className="italic">
-            Globant
+          currently a Senior Software Engineer at{" "}
+          <a href={socialLinks.blend} target="_blank" rel="noopener noreferrer" className="italic">
+            Blend360
           </a>
           , graduated in Computer Engineering at{" "}
           <a href={socialLinks.uba} target="_blank" rel="noopener noreferrer" className="italic">

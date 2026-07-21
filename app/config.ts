@@ -18,5 +18,6 @@ export const socialLinks = {
   uba: "https://www.uba.ar/",
   fiuba: "https://www.fi.uba.ar/",
   globant: "https://www.globant.com/",
+  blend: "https://www.blend360.com/",
   rocketleague: "https://rocketleague.tracker.network/rocket-league/profile/epic/LordOfThePing22/overview",
 };
