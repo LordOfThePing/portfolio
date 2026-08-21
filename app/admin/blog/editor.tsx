@@ -13,7 +13,7 @@ const labelText =
 type FormState = { errors?: string[]; ok?: boolean };
 type EditorItem = PostDraft & { id: number | null };
 
-export default function PostEditor({ item, onDone }: { item: EditorItem; onDone: () => void }) {
+export default function PostEditor({ item, onDone }: { item: EditorItem; onDone?: () => void }) {
   const router = useRouter();
   const fieldId = useId();
   const isNew = item.id === null;
@@ -25,6 +25,11 @@ export default function PostEditor({ item, onDone }: { item: EditorItem; onDone:
   const [slugAuto, setSlugAuto] = useState(item.slug === "");
   const [state, setState] = useState<FormState>({});
   const [pending, startTransition] = useTransition();
+
+  const handleCancel = () => {
+    if (onDone) onDone();
+    else router.push("/admin/blog");
+  };
 
   const onTitle = (value: string) => {
     setTitle(value);
@@ -40,7 +45,7 @@ export default function PostEditor({ item, onDone }: { item: EditorItem; onDone:
       if (result.ok) {
         if (isNew && result.slug) router.push("/admin/blog");
         setState({ ok: true });
-        onDone();
+        onDone?.();
       } else {
         setState({ errors: result.errors });
       }
@@ -110,7 +115,7 @@ export default function PostEditor({ item, onDone }: { item: EditorItem; onDone:
         <button type="button" onClick={submit} disabled={pending} className="rounded-xl bg-black dark:bg-white text-white dark:text-black font-medium px-5 py-3 min-h-[48px] transition-opacity hover:opacity-85 active:scale-[0.98] disabled:opacity-40">
           {pending ? "Saving…" : isNew ? "Create post" : saved ? "Saved ✓" : "Save changes"}
         </button>
-        <button type="button" onClick={onDone} className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors">
+        <button type="button" onClick={handleCancel} className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors">
           Cancel
         </button>
       </div>

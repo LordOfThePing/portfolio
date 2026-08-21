@@ -66,7 +66,6 @@ export default async function EditPostPage({ params }: Props) {
           visibility: post.visibility,
           bodyMd: post.bodyMd,
         }}
-        onDone={() => {}}
       />
     </div>
   );

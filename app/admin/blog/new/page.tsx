@@ -23,7 +23,6 @@ export default async function NewPostPage() {
       </div>
       <PostEditor
         item={{ id: null, slug: "", title: "", excerpt: "", visibility: "public", bodyMd: "" }}
-        onDone={() => {}}
       />
     </div>
   );
