@@ -7,6 +7,7 @@ import { logout } from "./actions";
 const TABS = [
   { href: "/admin/stats", label: "Stats" },
   { href: "/admin/config", label: "Config" },
+  { href: "/admin/blog", label: "Blog" },
 ];
 
 export default function AdminNav() {
@@ -16,7 +17,9 @@ export default function AdminNav() {
     <div className="flex items-center justify-between gap-4 mb-6">
       <nav className="flex gap-1 rounded-xl border border-black/10 dark:border-white/10 p-1">
         {TABS.map((tab) => {
-          const active = pathname === tab.href;
+          const active =
+            pathname === tab.href ||
+            (tab.href === "/admin/blog" && pathname.startsWith("/admin/blog/"));
           return (
             <Link
               key={tab.href}

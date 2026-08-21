@@ -55,3 +55,43 @@ $$;
 --    can't touch your stats or config.
 alter table public.link_events enable row level security;
 alter table public.link_config enable row level security;
+
+-- ============================================================================
+--  5) Blog — Markdown posts, edited at /admin/blog.
+--     visibility: 'public'  -> listed on /blog and rendered at /blog/<slug>.
+--                 'private' -> NOT listed anywhere; rendered only at the
+--                              secret path /blog/p/<token>. Handy for sharing
+--                              a single job proposal or draft with a link.
+--     Every post gets a random 32-char 'token' for private sharing; public
+--     posts simply never expose theirs.
+-- ============================================================================
+create table if not exists public.blog_posts (
+  id          bigint generated always as identity primary key,
+  slug        text        not null unique,       -- url path, e.g. 'my-first-post'
+  title       text        not null,
+  excerpt     text        not null default '',   -- shown on the /blog index
+  visibility  text        not null default 'public' check (visibility in ('public','private')),
+  token       text        not null,              -- secret share key (random)
+  body_md     text        not null default '',   -- markdown source
+  published_at timestamptz,                      -- null until published
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create index if not exists blog_posts_public_idx on public.blog_posts (visibility, published_at desc);
+
+-- Best-effort read helpers (the app reads directly through the service role,
+-- but these keep queries consistent and row-limited).
+create or replace function public.list_blog_posts(_max int default 100)
+returns table (id bigint, slug text, title text, excerpt text, visibility text, published_at timestamptz)
+language sql
+stable
+as $$
+  select id, slug, title, excerpt, visibility, published_at
+  from public.blog_posts
+  where visibility = 'public' and published_at is not null
+  order by published_at desc
+  limit _max;
+$$;
+
+alter table public.blog_posts enable row level security;

@@ -12,6 +12,12 @@ export function Navbar() {
           </Link>
         </div>
         <div className="flex flex-row gap-4 mt-6 md:mt-0 md:ml-auto items-center">
+          <Link
+            href="/blog"
+            className="text-sm text-neutral-600 dark:text-neutral-300 hover:text-[#47a3f3] transition-colors no-underline"
+          >
+            Blog
+          </Link>
           <ThemeSwitch />
         </div>
       </div>

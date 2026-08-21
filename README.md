@@ -51,6 +51,28 @@ The server will be running at [http://localhost:3000](http://localhost:3000).
 
 For more information about configuration, follow the instructions in the [Getting Started](https://nextfolio-template.vercel.app/blog/getting-started#configuration) post.
 
+## Blog (/blog)
+
+A Markdown blog you manage entirely from the admin area.
+
+- **Public posts** are listed on `/blog` and rendered at `/blog/<slug>`.
+- **Private posts** are never listed — each is shared through an unguessable
+  `/blog/p/<token>` link (great for a single job proposal or draft).
+- **Editing** lives under the `Blog` tab at `/admin/blog` and uses the same
+  credentials as the rest of the admin area.
+
+Setup:
+
+1. Run `supabase/schema.sql` once in Supabase (SQL Editor) — it adds the
+   `blog_posts` table.
+2. `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` must be set (same as the
+   links backend), and `ADMIN_USER` / `ADMIN_PASSWORD` as usual.
+3. Create posts from `/admin/blog` → "New post". Write in Markdown
+   (GitHub-flavored: tables, code blocks, etc.).
+
+No additional environment variables are required — it reuses the existing
+Supabase and admin credentials.
+
 ## Contributing
 
 Contributions are welcome! To get involved, just push your code to the repo. Whether you're enhancing existing features or adding new ones, your efforts are greatly appreciated!
