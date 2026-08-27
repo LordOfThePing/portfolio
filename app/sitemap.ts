@@ -12,5 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: BaseUrl, lastModified },
     { url: `${BaseUrl}links`, lastModified },
     { url: `${BaseUrl}blog`, lastModified },
+    { url: `${BaseUrl}policy`, lastModified },
+    { url: `${BaseUrl}terms`, lastModified },
   ];
 }
