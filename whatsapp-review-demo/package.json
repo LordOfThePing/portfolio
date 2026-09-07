@@ -1,0 +1,13 @@
+{
+  "name": "whatsapp-review-demo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App local de demostración (WhatsApp Cloud API) para grabar la evidencia en video de la Revisión de App de Meta (whatsapp_business_messaging y whatsapp_business_management).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

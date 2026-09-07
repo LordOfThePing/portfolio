@@ -1,0 +1,5 @@
+# Credenciales y datos locales - NUNCA subir al repositorio
+data/
+.env
+*.log
+node_modules/

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal de Mensajería - Demo App Review</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="logo">W</span>
+      <div>
+        <h1 id="brandName">Portal de Mensajería</h1>
+        <p class="subtitle">Solución de mensajería y atención a clientes sobre WhatsApp</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="version-tag">Graph API v20</span>
+      <span id="connPill" class="pill pill-unknown">Sin configurar</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- 1. Configuración -->
+  <section class="card setup">
+    <div class="card-head">
+      <h2><span class="step">1</span> Configuración de la integración</h2>
+      <p class="hint">Las credenciales se guardan solo en tu equipo (config.json local). Nunca viajan al navegador ni se exponen en el video si usas el selector de tipo password.</p>
+    </div>
+    <div class="grid2">
+      <label class="field full">
+        <span>Nombre visible de tu app (debe coincidir con el nombre de la app en revisión en Meta)</span>
+        <input id="cfgBrand" type="text" placeholder="Nombre de tu app" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Modo de ejecución</span>
+        <select id="cfgMode">
+          <option value="real">Producción · API real de Meta</option>
+          <option value="mock">Simulación · sin conexión (solo ensayo)</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Access Token (de prueba o token de sistema)</span>
+        <input id="cfgToken" type="password" placeholder="EAAG... no se muestra en el video" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Phone Number ID</span>
+        <input id="cfgPhone" type="text" placeholder="123456789012345" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>WhatsApp Business Account ID (WABA ID)</span>
+        <input id="cfgWaba" type="text" placeholder="123456789012345" autocomplete="off">
+      </label>
+    </div>
+    <div class="row">
+      <button id="btnSaveCfg" class="btn primary">Guardar y probar conexión</button>
+      <button id="btnClearCfg" class="btn ghost">Borrar credenciales</button>
+      <span id="cfgStatus" class="status-line"></span>
+    </div>
+    <div id="testInfo" class="callout hidden"><p id="testInfoText"></p></div>
+  </section>
+
+  <!-- 2 y 3: dos columnas -->
+  <div class="cols">
+
+    <!-- Enviar mensaje -->
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="step">2</span> Enviar mensaje de WhatsApp</h2>
+        <p class="hint">Permiso whatsapp_business_messaging · este es el flujo del Video 1</p>
+      </div>
+
+      <label class="field">
+        <span>Número destino (código de país + número, sin + ni espacios)</span>
+        <input id="toNumber" type="tel" placeholder="5215512345678" autocomplete="off">
+      </label>
+
+      <div class="seg" id="modeSeg">
+        <button type="button" class="seg-btn active" data-mode="text">Texto libre</button>
+        <button type="button" class="seg-btn" data-mode="template">Plantilla aprobada</button>
+      </div>
+
+      <div id="textFields">
+        <label class="field">
+          <span>Mensaje</span>
+          <textarea id="msgText" rows="3" placeholder="Hola, este es un mensaje de prueba enviado desde la app."></textarea>
+        </label>
+        <p class="note">Consejo para el video real: el texto libre solo llega si el destinatario te escribió antes (ventana de 24 horas) u optó por recibir mensajes. Si no, usa una plantilla aprobada o pide que te respondan primero.</p>
+      </div>
+
+      <div id="templateFields" class="hidden">
+        <label class="field">
+          <span>Plantilla a enviar</span>
+          <select id="tplSelect"></select>
+        </label>
+        <div class="grid2">
+          <label class="field">
+            <span>O nombre manual de plantilla</span>
+            <input id="tplNameManual" type="text" placeholder="confirmacion_cita" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>Idioma (código)</span>
+            <input id="tplLang" type="text" value="en_US" autocomplete="off">
+          </label>
+        </div>
+        <label class="field">
+          <span>Parámetros del cuerpo si la plantilla tiene variables {{1}}, {{2}} (separados por |)</span>
+          <input id="tplParams" type="text" placeholder="valor1|valor2" autocomplete="off">
+        </label>
+      </div>
+
+      <div class="row send-row">
+        <button id="btnSend" class="btn primary big">Enviar mensaje</button>
+        <span id="sendStatus" class="status-line"></span>
+      </div>
+      <div id="sendResult" class="result hidden"><pre id="sendResultPre"></pre></div>
+    </section>
+
+    <!-- Plantillas -->
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="step">3</span> Plantillas de mensaje</h2>
+        <p class="hint">Permiso whatsapp_business_management · este es el flujo del Video 2</p>
+      </div>
+
+      <h3 class="section-title">Crear plantilla (llamada a la API)</h3>
+      <div class="grid2">
+        <label class="field">
+          <span>Nombre (minúsculas, sin espacios)</span>
+          <input id="tplName" type="text" placeholder="confirmacion_cita" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>Idioma</span>
+          <select id="tplLang2">
+            <option value="es_MX">Español (México) · es_MX</option>
+            <option value="es_ES">Español (España) · es_ES</option>
+            <option value="en_US" selected>Inglés (US) · en_US</option>
+            <option value="pt_BR">Portugués (Brasil) · pt_BR</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Categoría</span>
+          <select id="tplCat">
+            <option value="UTILITY" selected>UTILITY (transaccional)</option>
+            <option value="MARKETING">MARKETING</option>
+            <option value="AUTHENTICATION">AUTHENTICATION</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Encabezado opcional (texto)</span>
+          <input id="tplHeader" type="text" placeholder="Confirmación de cita" autocomplete="off">
+        </label>
+      </div>
+      <label class="field">
+        <span>Cuerpo de la plantilla (usa {{1}}, {{2}} para variables)</span>
+        <textarea id="tplBody" rows="3" placeholder="Hola {{1}}, tu cita del día {{2}} quedó confirmada. ¡Gracias!"></textarea>
+      </label>
+      <div class="row">
+        <button id="btnCreateTpl" class="btn primary">Crear plantilla</button>
+        <button id="btnRefreshTpl" class="btn ghost">Actualizar lista</button>
+        <span id="tplStatus" class="status-line"></span>
+      </div>
+      <div id="tplResult" class="result hidden"><pre id="tplResultPre"></pre></div>
+
+      <h3 class="section-title">Plantillas existentes</h3>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr><th>Nombre</th><th>Estado</th><th>Categoría</th><th>Idioma</th><th>ID</th></tr>
+          </thead>
+          <tbody id="tplTbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Bitácora -->
+  <section class="card">
+    <div class="card-head">
+      <h2><span class="step">4</span> Bitácora de llamadas a la API</h2>
+      <p class="hint">Cada operación (conexión, envío, plantillas) queda registrada aquí y en data/log.jsonl. Es la evidencia técnica que acompaña tus videos.</p>
+    </div>
+    <pre id="logBox" class="log">Cargando bitácora...</pre>
+  </section>
+
+  <section class="card checklist">
+    <h2>Guía rápida para grabar (Resumen de Meta)</h2>
+    <ol>
+      <li><strong>Video 1 · whatsapp_business_messaging:</strong> muestra tu app enviando un mensaje real a un número de WhatsApp <em>y</em> ese mismo mensaje apareciendo en WhatsApp Web / móvil. En este panel: envía en sección 2 y graba ambas ventanas.</li>
+      <li><strong>Video 2 · whatsapp_business_management:</strong> muestra llamadas de prueba a la API creando una plantilla. En este panel: crea una plantilla en sección 3 y deja visible la bitácora con la respuesta de la API.</li>
+      <li>Usa <em>Producción</em> para los videos finales. El modo <em>Simulación</em> solo sirve para ensayar la grabación sin conexión.</li>
+      <li>Antes de grabar el Video 1, abre WhatsApp con el número destino y envía un mensaje al número de negocio para abrir la ventana de 24 h (o envía una plantilla aprobada).</li>
+    </ol>
+  </section>
+
+</main>
+
+<footer class="foot">
+  App de demostración local · WhatsApp Cloud API · Revisión de App de Meta · Ejecuta con: node server.js · Documentación completa en README.md
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
