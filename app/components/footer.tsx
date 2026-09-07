@@ -32,6 +32,12 @@ export default function Footer() {
         >
           Terms
         </Link>
+        <Link
+          className="no-underline hover:underline underline-offset-4"
+          href="/data-deletion"
+        >
+          Data deletion
+        </Link>
       </small>
     </footer>
   );

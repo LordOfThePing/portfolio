@@ -556,6 +556,18 @@ export default function PolicyPage() {
             built for a client, see section 2 &mdash; I will forward your
             request to them.
           </P>
+          <P>
+            For a step-by-step guide on requesting deletion of your data
+            &mdash; including how to revoke third-party OAuth access &mdash;
+            see the{" "}
+            <Link
+              href="/data-deletion"
+              className="no-underline hover:underline underline-offset-4 text-black dark:text-white"
+            >
+              Data Deletion Instructions
+            </Link>
+            .
+          </P>
         </Section>
 
         <Section id="children" title="15. Children">

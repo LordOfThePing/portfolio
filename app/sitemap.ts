@@ -14,5 +14,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BaseUrl}blog`, lastModified },
     { url: `${BaseUrl}policy`, lastModified },
     { url: `${BaseUrl}terms`, lastModified },
+    { url: `${BaseUrl}data-deletion`, lastModified },
   ];
 }
