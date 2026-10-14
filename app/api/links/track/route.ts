@@ -31,9 +31,17 @@ export async function POST(request: NextRequest) {
 
     // Ids are checked against the live config, so only links that actually
     // exist can create counter keys. Without this, anyone could POST junk and
-    // grow the store without bound.
+    // grow the store without bound. Group destinations post the composite form
+    // "<parent>:<child>" — accepted here iff both halves exist.
     const { links } = await readConfig();
-    if (!links.some((link) => link.id === body.id)) {
+    const [parentId, childId] = body.id.split(":", 2);
+    const parent = links.find((link) => link.id === parentId);
+    const known = parent
+      ? childId
+        ? parent.children?.some((child) => child.id === childId) === true
+        : true
+      : false;
+    if (!known) {
       return NextResponse.json({ error: "Unknown link id" }, { status: 400 });
     }
 

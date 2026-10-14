@@ -3,6 +3,7 @@ import { describeError, supabase } from "./supabase";
 import {
   links as seedLinks,
   linksProfile as seedProfile,
+  type ChildLink,
   type LinkItem,
   type LinksProfile,
 } from "app/links-config";
@@ -30,6 +31,7 @@ export type LinksConfig = {
 
 export const LIMITS = {
   links: 50,
+  children: 15,
   id: 32,
   label: 60,
   description: 120,
@@ -126,19 +128,91 @@ export function validateConfig(input: unknown): {
       errors.push(`${position} ("${id}"): label can't be empty.`);
       return;
     }
-    if (!href) {
-      errors.push(`${position} ("${id}"): URL can't be empty.`);
-      return;
-    }
-    if (!isSafeHref(href)) {
-      errors.push(
-        `${position} ("${id}"): URL must start with https://, http://, mailto: or /`,
-      );
-      return;
-    }
     if (!isLinkIcon(icon)) {
       errors.push(`${position} ("${id}"): unknown icon "${icon}".`);
       return;
+    }
+
+    const rawChildren = Array.isArray(item.children) ? item.children : [];
+    const hasChildren = rawChildren.length > 0;
+    const children: ChildLink[] = [];
+
+    if (hasChildren) {
+      if (rawChildren.length > LIMITS.children) {
+        errors.push(
+          `${position} ("${id}"): too many destinations (max ${LIMITS.children}).`,
+        );
+      }
+      const seenChild = new Set<string>();
+      rawChildren.slice(0, LIMITS.children).forEach((childEntry, childIndex) => {
+        const child = (childEntry ?? {}) as Partial<ChildLink>;
+        const childPos = `${position} ("${id}") destination ${childIndex + 1}`;
+
+        const childId = clamp(str(child.id).toLowerCase(), LIMITS.id);
+        const childLabel = clamp(str(child.label), LIMITS.label);
+        const childHref = clamp(str(child.href), LIMITS.href);
+        const childIcon = str(child.icon);
+        const childColor = str(child.color);
+
+        if (!childId) {
+          errors.push(`${childPos}: id can't be empty.`);
+          return;
+        }
+        if (!ID_PATTERN.test(childId)) {
+          errors.push(
+            `${childPos} ("${childId}"): id may only use lowercase letters, numbers, - and _.`,
+          );
+          return;
+        }
+        if (seenChild.has(childId)) {
+          errors.push(
+            `${childPos} ("${childId}"): duplicate id within the group.`,
+          );
+          return;
+        }
+        if (!childLabel) {
+          errors.push(`${childPos} ("${childId}"): label can't be empty.`);
+          return;
+        }
+        if (!childHref) {
+          errors.push(`${childPos} ("${childId}"): URL can't be empty.`);
+          return;
+        }
+        if (!isSafeHref(childHref)) {
+          errors.push(
+            `${childPos} ("${childId}"): URL must start with https://, http://, mailto: or /`,
+          );
+          return;
+        }
+        if (!isLinkIcon(childIcon)) {
+          errors.push(
+            `${childPos} ("${childId}"): unknown icon "${childIcon}".`,
+          );
+          return;
+        }
+
+        seenChild.add(childId);
+        children.push({
+          id: childId,
+          label: childLabel,
+          href: childHref,
+          icon: childIcon,
+          color: isLinkColor(childColor) ? childColor : undefined,
+          description:
+            clamp(str(child.description), LIMITS.description) || undefined,
+        });
+      });
+    } else {
+      if (!href) {
+        errors.push(`${position} ("${id}"): URL can't be empty.`);
+        return;
+      }
+      if (!isSafeHref(href)) {
+        errors.push(
+          `${position} ("${id}"): URL must start with https://, http://, mailto: or /`,
+        );
+        return;
+      }
     }
 
     const color = str(item.color);
@@ -147,13 +221,16 @@ export function validateConfig(input: unknown): {
     links.push({
       id,
       label,
-      href,
+      // A group's `href` is unused; store it as empty rather than carrying
+      // whatever placeholder the editor had.
+      href: hasChildren ? "" : href,
       icon,
       // Unknown/absent color just falls back to the neutral default.
       color: isLinkColor(color) ? color : undefined,
       description: clamp(str(item.description), LIMITS.description) || undefined,
       enabled: item.enabled !== false,
       featured: item.featured === true,
+      children: children.length > 0 ? children : undefined,
     });
   });
 
@@ -203,3 +280,11 @@ export async function clearConfig(): Promise<void> {
 
 export const visibleLinks = (config: LinksConfig): LinkItem[] =>
   config.links.filter((link) => link.enabled !== false);
+
+export const findLink = (config: LinksConfig, id: string): LinkItem | undefined =>
+  config.links.find((link) => link.id === id);
+
+export const findChild = (
+  parent: LinkItem,
+  childId: string,
+): ChildLink | undefined => parent.children?.find((child) => child.id === childId);

@@ -32,6 +32,17 @@ export default async function LinksPage() {
   // out of the browser bundle — only the SVGs on the page are sent.
   const links: RenderedLink[] = visibleLinks(config).map((link) => {
     const { Icon } = ICON_META[link.icon] ?? ICON_META.globe;
+    const children = link.children?.map((child) => {
+      const ChildIcon = (ICON_META[child.icon] ?? ICON_META.globe).Icon;
+      return {
+        id: `${link.id}:${child.id}`,
+        label: child.label,
+        description: child.description,
+        href: child.href,
+        icon: <ChildIcon aria-hidden="true" />,
+        iconStyle: iconColorStyle(child.color),
+      } satisfies RenderedLink;
+    });
     return {
       id: link.id,
       label: link.label,
@@ -40,6 +51,7 @@ export default async function LinksPage() {
       featured: link.featured,
       icon: <Icon aria-hidden="true" />,
       iconStyle: iconColorStyle(link.color),
+      children: children && children.length > 0 ? children : undefined,
     };
   });
 

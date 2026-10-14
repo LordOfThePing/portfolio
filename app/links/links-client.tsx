@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import type { LinksProfile } from "app/links-config";
 
@@ -18,6 +18,12 @@ export type RenderedLink = {
   icon: ReactNode;
   /** Preset color tint for the icon chip, or undefined for the theme default. */
   iconStyle?: CSSProperties;
+  /**
+   * If present and non-empty, the button becomes an accordion disclosure. The
+   * children render as a nested list beneath it, each tracked as a click on
+   * the composite id (`<parent>:<child>`).
+   */
+  children?: RenderedLink[];
 };
 
 const VISITOR_FLAG = "pf_seen_links";
@@ -39,10 +45,11 @@ function track(payload: Record<string, unknown>): void {
   }
 }
 
-function useVisitTracking(): void {
+function useVisitTracking(enabled: boolean): void {
   const tracked = useRef(false);
 
   useEffect(() => {
+    if (!enabled) return;
     // React StrictMode runs effects twice in dev; this keeps the count honest.
     if (tracked.current) return;
     tracked.current = true;
@@ -56,28 +63,18 @@ function useVisitTracking(): void {
     }
 
     track({ type: "visit", firstVisit });
-  }, []);
+  }, [enabled]);
 }
 
-function LinkButton({ link }: { link: RenderedLink }) {
-  const isExternal = link.href.startsWith("http") || link.href.startsWith("mailto:");
-
+function LinkChrome({
+  link,
+  trailing,
+}: {
+  link: RenderedLink;
+  trailing: ReactNode;
+}) {
   return (
-    <a
-      href={link.href}
-      onClick={() => track({ type: "click", id: link.id })}
-      target={isExternal ? "_blank" : undefined}
-      rel={isExternal ? "noopener noreferrer" : undefined}
-      className={[
-        "group flex items-center gap-4 w-full rounded-2xl px-4 py-4 min-h-[68px]",
-        "border no-underline transition-all duration-200",
-        "active:scale-[0.98] touch-manipulation",
-        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47a3f3]",
-        link.featured
-          ? "border-[#47a3f3]/50 bg-[#47a3f3]/[0.07] hover:bg-[#47a3f3]/[0.14] hover:border-[#47a3f3]"
-          : "border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:border-black/20 dark:hover:border-white/20",
-      ].join(" ")}
-    >
+    <>
       <span
         className={[
           "flex-none grid place-items-center w-11 h-11 rounded-xl text-xl transition-transform duration-200 group-hover:scale-110",
@@ -107,23 +104,112 @@ function LinkButton({ link }: { link: RenderedLink }) {
       </span>
 
       <span
-        className="flex-none text-neutral-400 dark:text-neutral-600 transition-transform duration-200 group-hover:translate-x-0.5"
+        className="flex-none text-neutral-400 dark:text-neutral-600 transition-transform duration-200"
         aria-hidden="true"
       >
-        →
+        {trailing}
       </span>
+    </>
+  );
+}
+
+function buttonFrame(featured?: boolean): string {
+  return [
+    "group flex items-center gap-4 w-full rounded-2xl px-4 py-4 min-h-[68px]",
+    "border no-underline transition-all duration-200",
+    "active:scale-[0.98] touch-manipulation",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47a3f3]",
+    featured
+      ? "border-[#47a3f3]/50 bg-[#47a3f3]/[0.07] hover:bg-[#47a3f3]/[0.14] hover:border-[#47a3f3]"
+      : "border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:border-black/20 dark:hover:border-white/20",
+  ].join(" ");
+}
+
+function LeafButton({ link }: { link: RenderedLink }) {
+  const isExternal = link.href.startsWith("http") || link.href.startsWith("mailto:");
+
+  return (
+    <a
+      href={link.href}
+      onClick={() => track({ type: "click", id: link.id })}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+      className={buttonFrame(link.featured)}
+    >
+      <LinkChrome
+        link={link}
+        trailing={<span className="transition-transform duration-200 group-hover:translate-x-0.5 inline-block">→</span>}
+      />
     </a>
   );
+}
+
+function GroupButton({ link }: { link: RenderedLink }) {
+  const [open, setOpen] = useState(false);
+  const panelId = `links-group-${link.id.replace(/[^a-z0-9_-]/gi, "-")}`;
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    // Count the group tap once per expand so the group behaves like any other
+    // button in stats, matching the direct /links/<id> share link.
+    if (next) track({ type: "click", id: link.id });
+  };
+
+  return (
+    <div className="flex flex-col">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className={`${buttonFrame(link.featured)} text-left`}
+      >
+        <LinkChrome
+          link={link}
+          trailing={
+            <span
+              className={[
+                "inline-block transition-transform duration-200",
+                open ? "rotate-180" : "",
+              ].join(" ")}
+            >
+              ▾
+            </span>
+          }
+        />
+      </button>
+
+      {open && (
+        <div
+          id={panelId}
+          className="flex flex-col gap-2 mt-2 ml-4 pl-3 border-l border-black/10 dark:border-white/10"
+        >
+          {link.children?.map((child) => (
+            <LeafButton key={child.id} link={child} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LinkButton({ link }: { link: RenderedLink }) {
+  if (link.children?.length) return <GroupButton link={link} />;
+  return <LeafButton link={link} />;
 }
 
 export default function LinksClient({
   links,
   profile,
+  trackVisit = true,
 }: {
   links: RenderedLink[];
   profile: LinksProfile;
+  /** The chooser page (/links/<group>) suppresses this to avoid double-count. */
+  trackVisit?: boolean;
 }) {
-  useVisitTracking();
+  useVisitTracking(trackVisit);
 
   return (
     <div className="w-full max-w-[460px] mx-auto">

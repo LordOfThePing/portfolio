@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import type { LinkItem } from "app/links-config";
+import type { ChildLink, LinkItem } from "app/links-config";
 import type { LinksConfig } from "app/lib/links-store";
 import { ICON_META } from "app/links/icons";
 import { LINK_COLORS, LINK_COLOR_KEYS } from "app/links/colors";
@@ -87,6 +87,134 @@ function DirectLink({ id }: { id: string }) {
   );
 }
 
+function ChildCard({
+  parentId,
+  child,
+  onChange,
+  onRemove,
+}: {
+  parentId: string;
+  child: ChildLink;
+  onChange: (patch: Partial<ChildLink>) => void;
+  onRemove: () => void;
+}) {
+  const fieldId = useId();
+  // Auto-sync id from label while the row is still "empty-ish". Once a user
+  // has typed an id by hand, we leave it alone.
+  const autoSyncId = !child.id || child.id === slugify(child.label);
+
+  return (
+    <li className="rounded-lg border border-black/10 dark:border-white/10 bg-white/50 dark:bg-black/[0.2] p-3 flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
+        <label className={labelText} htmlFor={`${fieldId}-label`}>
+          Label
+        </label>
+        <input
+          id={`${fieldId}-label`}
+          className={field}
+          value={child.label}
+          placeholder="Twitch"
+          onChange={(event) => {
+            const label = event.target.value;
+            onChange(autoSyncId ? { label, id: slugify(label) } : { label });
+          }}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className={labelText} htmlFor={`${fieldId}-href`}>
+          URL
+        </label>
+        <input
+          id={`${fieldId}-href`}
+          className={field}
+          value={child.href}
+          inputMode="url"
+          autoCapitalize="none"
+          autoCorrect="off"
+          placeholder="https://twitch.tv/..."
+          onChange={(event) => onChange({ href: event.target.value })}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className={labelText} htmlFor={`${fieldId}-desc`}>
+          Description (optional)
+        </label>
+        <input
+          id={`${fieldId}-desc`}
+          className={field}
+          value={child.description ?? ""}
+          placeholder="Streams de los sábados"
+          onChange={(event) => onChange({ description: event.target.value })}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={labelText}>Icon</span>
+        <IconPicker value={child.icon} onChange={(icon) => onChange({ icon })} />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className={labelText}>Icon color</span>
+        <div className="flex flex-wrap gap-2">
+          {LINK_COLOR_KEYS.map((key) => {
+            const { label, fg } = LINK_COLORS[key];
+            const active = (child.color ?? "default") === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onChange({ color: key === "default" ? undefined : key })}
+                title={label}
+                aria-label={label}
+                aria-pressed={active}
+                className={[
+                  "w-7 h-7 rounded-lg border grid place-items-center transition-transform",
+                  active
+                    ? "ring-2 ring-offset-1 ring-black/40 dark:ring-white/50 ring-offset-white dark:ring-offset-[#121212] scale-105"
+                    : "hover:scale-105",
+                  fg ? "" : "border-black/15 dark:border-white/20",
+                ].join(" ")}
+                style={
+                  fg
+                    ? { backgroundColor: `${fg}24`, color: fg, borderColor: `${fg}55` }
+                    : undefined
+                }
+              >
+                {fg ? (
+                  <span
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: fg }}
+                  />
+                ) : (
+                  <span className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                    —
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-1">
+        <code className="flex-1 min-w-0 truncate rounded-md border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] px-2 py-1 text-[11px] text-neutral-600 dark:text-neutral-300">
+          id: {child.id || "—"}
+          {parentId && child.id ? ` · tracked as ${parentId}:${child.id}` : ""}
+        </code>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="flex-none text-xs rounded-md border border-red-500/30 text-red-600 dark:text-red-400 px-2 py-1 hover:bg-red-500/10 transition-colors"
+        >
+          Remove
+        </button>
+      </div>
+    </li>
+  );
+}
+
 function LinkCard({
   row,
   onChange,
@@ -100,6 +228,29 @@ function LinkCard({
   const fieldId = useId();
   const { link, isNew } = row;
   const Icon = ICON_META[link.icon]?.Icon ?? ICON_META.globe.Icon;
+  const isGroup = (link.children?.length ?? 0) > 0;
+
+  const children: ChildLink[] = link.children ?? [];
+
+  const patchChild = (index: number, patch: Partial<ChildLink>) => {
+    const next = children.map((child, i) =>
+      i === index ? { ...child, ...patch } : child,
+    );
+    onChange({ children: next });
+  };
+
+  const addChild = () => {
+    const next: ChildLink[] = [
+      ...children,
+      { id: "", label: "", href: "", icon: "globe" },
+    ];
+    onChange({ children: next });
+  };
+
+  const removeChild = (index: number) => {
+    const next = children.filter((_, i) => i !== index);
+    onChange({ children: next.length > 0 ? next : undefined });
+  };
 
   const {
     attributes,
@@ -162,7 +313,9 @@ function LinkCard({
             <span className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
               {link.enabled === false ? "hidden · " : ""}
               {link.featured ? "featured · " : ""}
-              {link.href || "no URL"}
+              {isGroup
+                ? `group · ${children.length} destination${children.length === 1 ? "" : "s"}`
+                : link.href || "no URL"}
             </span>
           </span>
           <span
@@ -207,21 +360,23 @@ function LinkCard({
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className={labelText} htmlFor={`${fieldId}-href`}>
-              URL
-            </label>
-            <input
-              id={`${fieldId}-href`}
-              className={field}
-              value={link.href}
-              inputMode="url"
-              autoCapitalize="none"
-              autoCorrect="off"
-              placeholder="https://github.com/LordOfThePing"
-              onChange={(event) => onChange({ href: event.target.value })}
-            />
-          </div>
+          {!isGroup && (
+            <div className="flex flex-col gap-1">
+              <label className={labelText} htmlFor={`${fieldId}-href`}>
+                URL
+              </label>
+              <input
+                id={`${fieldId}-href`}
+                className={field}
+                value={link.href}
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                placeholder="https://github.com/LordOfThePing"
+                onChange={(event) => onChange({ href: event.target.value })}
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-1">
             <span className={labelText}>Icon</span>
@@ -284,6 +439,40 @@ function LinkCard({
               onChange={(event) => onChange({ id: event.target.value })}
             />
             {link.id && <DirectLink id={link.id} />}
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-lg border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-0.5">
+                <span className={labelText}>Group destinations</span>
+                <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                  {isGroup
+                    ? "Tapping this button on /links reveals these. The URL field is unused."
+                    : "Add destinations to turn this into a chooser (e.g. stream platforms)."}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={addChild}
+                className="flex-none text-xs rounded-md border border-black/10 dark:border-white/10 px-2.5 py-1.5 text-black dark:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
+              >
+                + Destination
+              </button>
+            </div>
+
+            {children.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {children.map((child, index) => (
+                  <ChildCard
+                    key={index}
+                    parentId={link.id}
+                    child={child}
+                    onChange={(patch) => patchChild(index, patch)}
+                    onRemove={() => removeChild(index)}
+                  />
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-4 pt-1">

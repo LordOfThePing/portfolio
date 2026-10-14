@@ -24,6 +24,15 @@ export type { LinkIcon };
  *  Colors: see app/links/colors.ts.
  */
 
+export type ChildLink = {
+  id: string;
+  label: string;
+  description?: string;
+  href: string;
+  icon: LinkIcon;
+  color?: LinkColor;
+};
+
 export type LinkItem = {
   /**
    * Button id: click-stats key and direct-link path (/links/<id>).
@@ -34,6 +43,7 @@ export type LinkItem = {
   label: string;
   /** Small grey text under the label. Optional. */
   description?: string;
+  /** Destination URL. Ignored (and may be empty) when `children` is set. */
   href: string;
   icon: LinkIcon;
   /** Icon background color preset. Omit for the neutral default. */
@@ -42,6 +52,12 @@ export type LinkItem = {
   enabled?: boolean;
   /** Highlights the button to draw the eye. Use on 1–2 links, max. */
   featured?: boolean;
+  /**
+   * If present and non-empty, this link is a group: tapping it reveals the
+   * destinations on /links, and /links/<id> renders them as a chooser page.
+   * Groups don't need their own `href` — it's unused.
+   */
+  children?: ChildLink[];
 };
 
 export type LinksProfile = {
