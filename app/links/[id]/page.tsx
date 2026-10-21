@@ -14,6 +14,10 @@ import LinksClient, { type RenderedLink } from "../links-client";
  *
  * Group links (links with children): render a chooser page listing every
  * destination, so one Instagram link lets the visitor pick their platform.
+ *
+ * The `hidden` flag only controls visibility on /links — direct share URLs
+ * keep working either way, which is the whole point of hiding a link: use it
+ * from a QR code or a specific channel without putting it in the public list.
  */
 export const dynamic = "force-dynamic";
 
@@ -30,6 +34,10 @@ export async function generateMetadata({
   return {
     title: link.label,
     description: link.description ?? config.profile.bio,
+    // Hidden groups still serve their chooser, but shouldn't show up in Google
+    // — "hidden" is for QR codes and direct shares, not for the public index.
+    robots:
+      link.enabled === false ? { index: false, follow: false } : undefined,
     openGraph: {
       title: `${config.profile.name} — ${link.label}`,
       description: link.description ?? config.profile.bio,
@@ -48,7 +56,7 @@ export default async function LinkDirectPage({
   const config = await readConfig();
   const link = findLink(config, id);
 
-  if (!link || link.enabled === false) redirect("/links");
+  if (!link) redirect("/links");
 
   // Group: render the chooser. Count a click on the group id so the share
   // link has the same analytic weight as any other button.
