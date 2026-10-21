@@ -99,12 +99,40 @@ function ChildCard({
   onRemove: () => void;
 }) {
   const fieldId = useId();
+  // A row that was just added starts empty — open it so the user can type.
+  // Existing rows start collapsed so a long group doesn't take over the screen.
+  const [open, setOpen] = useState(() => !child.label && !child.href);
+  const ChildIcon = ICON_META[child.icon]?.Icon ?? ICON_META.globe.Icon;
   // Auto-sync id from label while the row is still "empty-ish". Once a user
   // has typed an id by hand, we leave it alone.
   const autoSyncId = !child.id || child.id === slugify(child.label);
 
   return (
-    <li className="rounded-lg border border-black/10 dark:border-white/10 bg-white/50 dark:bg-black/[0.2] p-3 flex flex-col gap-2">
+    <li className="rounded-lg border border-black/10 dark:border-white/10 bg-white/50 dark:bg-black/[0.2]">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors"
+      >
+        <span className="flex-none grid place-items-center w-7 h-7 rounded-md bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white">
+          <ChildIcon />
+        </span>
+        <span className="flex flex-col min-w-0 flex-1">
+          <span className="text-sm text-black dark:text-white truncate">
+            {child.label || <span className="text-neutral-400">Untitled destination</span>}
+          </span>
+          <span className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
+            {child.href || "no URL"}
+          </span>
+        </span>
+        <span className="flex-none text-neutral-400 text-xs px-1" aria-hidden="true">
+          {open ? "▲" : "▼"}
+        </span>
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-2 px-3 pb-3 pt-1 border-t border-black/5 dark:border-white/5">
       <div className="flex flex-col gap-1">
         <label className={labelText} htmlFor={`${fieldId}-label`}>
           Label
@@ -211,6 +239,8 @@ function ChildCard({
           Remove
         </button>
       </div>
+        </div>
+      )}
     </li>
   );
 }
