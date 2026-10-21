@@ -66,6 +66,7 @@ function useVisitTracking(enabled: boolean): void {
   }, [enabled]);
 }
 
+/** The icon chip. iconStyle (color-based) wins; else fall back to featured/neutral. */
 function LinkChrome({
   link,
   trailing,
@@ -78,8 +79,6 @@ function LinkChrome({
       <span
         className={[
           "flex-none grid place-items-center w-11 h-11 rounded-xl text-xl transition-transform duration-200 group-hover:scale-110",
-          // A chosen color (inline style) wins; otherwise fall back to the
-          // featured tint or the neutral chip.
           link.iconStyle
             ? ""
             : link.featured
@@ -113,20 +112,40 @@ function LinkChrome({
   );
 }
 
-function buttonFrame(featured?: boolean): string {
-  return [
-    "group flex items-center gap-4 w-full rounded-2xl px-4 py-4 min-h-[68px]",
-    "border no-underline transition-all duration-200",
-    "active:scale-[0.98] touch-manipulation",
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47a3f3]",
-    featured
-      ? "border-[#47a3f3]/50 bg-[#47a3f3]/[0.07] hover:bg-[#47a3f3]/[0.14] hover:border-[#47a3f3]"
-      : "border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:border-black/20 dark:hover:border-white/20",
-  ].join(" ");
+/**
+ * Base frame classes + inline `--feat-fg` when a featured link also has a
+ * picked color — the pf-featured-colored class in global.css reads that
+ * variable so hover/focus stay color-aware without extra JS.
+ */
+function frameProps(link: RenderedLink): {
+  className: string;
+  style?: CSSProperties;
+} {
+  const base =
+    "group flex items-center gap-4 w-full rounded-2xl px-4 py-4 min-h-[68px] border no-underline transition-all duration-200 active:scale-[0.98] touch-manipulation focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+
+  if (!link.featured) {
+    return {
+      className: `${base} focus-visible:outline-[#47a3f3] border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:border-black/20 dark:hover:border-white/20`,
+    };
+  }
+
+  const fg = typeof link.iconStyle?.color === "string" ? link.iconStyle.color : undefined;
+  if (fg) {
+    return {
+      className: `${base} pf-featured-colored`,
+      style: { ["--feat-fg" as string]: fg } as CSSProperties,
+    };
+  }
+
+  return {
+    className: `${base} focus-visible:outline-[#47a3f3] border-[#47a3f3]/50 bg-[#47a3f3]/[0.07] hover:bg-[#47a3f3]/[0.14] hover:border-[#47a3f3]`,
+  };
 }
 
 function LeafButton({ link }: { link: RenderedLink }) {
   const isExternal = link.href.startsWith("http") || link.href.startsWith("mailto:");
+  const frame = frameProps(link);
 
   return (
     <a
@@ -134,7 +153,8 @@ function LeafButton({ link }: { link: RenderedLink }) {
       onClick={() => track({ type: "click", id: link.id })}
       target={isExternal ? "_blank" : undefined}
       rel={isExternal ? "noopener noreferrer" : undefined}
-      className={buttonFrame(link.featured)}
+      className={frame.className}
+      style={frame.style}
     >
       <LinkChrome
         link={link}
@@ -147,6 +167,7 @@ function LeafButton({ link }: { link: RenderedLink }) {
 function GroupButton({ link }: { link: RenderedLink }) {
   const [open, setOpen] = useState(false);
   const panelId = `links-group-${link.id.replace(/[^a-z0-9_-]/gi, "-")}`;
+  const frame = frameProps(link);
 
   const toggle = () => {
     const next = !open;
@@ -163,7 +184,8 @@ function GroupButton({ link }: { link: RenderedLink }) {
         onClick={toggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className={`${buttonFrame(link.featured)} text-left`}
+        className={`${frame.className} text-left`}
+        style={frame.style}
       >
         <LinkChrome
           link={link}

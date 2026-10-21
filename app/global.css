@@ -7,6 +7,23 @@
   color: #fefefe;
 }
 
+/*
+ * Featured links on /links can inherit the icon's picked color. Tailwind can't
+ * express `/50` opacity on a CSS-variable color cleanly, so the frame + hover
+ * live here instead and consume `--feat-fg` set inline by the component.
+ */
+.pf-featured-colored {
+  border-color: color-mix(in srgb, var(--feat-fg) 50%, transparent);
+  background-color: color-mix(in srgb, var(--feat-fg) 7%, transparent);
+}
+.pf-featured-colored:hover {
+  border-color: var(--feat-fg);
+  background-color: color-mix(in srgb, var(--feat-fg) 14%, transparent);
+}
+.pf-featured-colored:focus-visible {
+  outline-color: var(--feat-fg);
+}
+
 /* Light theme colors */
 :root {
   --sh-class: #2d5e9d;
