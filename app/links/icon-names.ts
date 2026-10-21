@@ -135,6 +135,7 @@ export const ICON_NAMES = [
   "youtube",
   "tiktok",
   "twitch",
+  "kick",
   "vimeo",
   "rumble",
   "bilibili",
