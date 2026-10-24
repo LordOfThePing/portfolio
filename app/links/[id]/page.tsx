@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { recordClick } from "app/lib/metrics";
-import { findLink, isSafeHref, readConfig } from "app/lib/links-store";
-import { ICON_META } from "../icons";
-import { iconColorStyle } from "../colors";
+import {
+  findLink,
+  findList,
+  isSafeHref,
+  listLinks,
+  readConfig,
+} from "app/lib/links-store";
 import LinksClient, { type RenderedLink } from "../links-client";
+import { renderChild, renderLink } from "../render";
 
 /**
  * Direct-share endpoint for a single button: /links/<button-id>.
@@ -18,6 +23,9 @@ import LinksClient, { type RenderedLink } from "../links-client";
  * The `hidden` flag only controls visibility on /links — direct share URLs
  * keep working either way, which is the whole point of hiding a link: use it
  * from a QR code or a specific channel without putting it in the public list.
+ *
+ * Custom lists (their own header + pick of links) also live here. Validation
+ * keeps list ids and link ids apart, so the lookup order never matters.
  */
 export const dynamic = "force-dynamic";
 
@@ -29,6 +37,23 @@ export async function generateMetadata({
   const { id } = await params;
   const config = await readConfig();
   const link = findLink(config, id);
+
+  const list = link ? undefined : findList(config, id);
+  if (list) {
+    return {
+      title: list.profile.name,
+      description: list.profile.bio || undefined,
+      // Lists are usually made for one audience; opt in to search engines.
+      robots: list.indexed ? undefined : { index: false, follow: false },
+      openGraph: {
+        title: `${list.profile.name} — Links`,
+        description: list.profile.bio || undefined,
+        url: `/links/${list.id}`,
+        type: "profile",
+      },
+    };
+  }
+
   if (!link?.children?.length) return { robots: { index: false, follow: false } };
 
   return {
@@ -56,25 +81,28 @@ export default async function LinkDirectPage({
   const config = await readConfig();
   const link = findLink(config, id);
 
-  if (!link) redirect("/links");
+  if (!link) {
+    const list = findList(config, id);
+    if (!list) redirect("/links");
+
+    return (
+      <section className="py-4">
+        <LinksClient
+          links={listLinks(config, list).map(renderLink)}
+          profile={list.profile}
+        />
+      </section>
+    );
+  }
 
   // Group: render the chooser. Count a click on the group id so the share
   // link has the same analytic weight as any other button.
   if (link.children?.length) {
     await recordClick(link.id);
 
-    const children: RenderedLink[] = link.children.map((child) => {
-      const { Icon } = ICON_META[child.icon] ?? ICON_META.globe;
-      return {
-        // The track endpoint accepts this composite form; see api/links/track.
-        id: `${link.id}:${child.id}`,
-        label: child.label,
-        description: child.description,
-        href: child.href,
-        icon: <Icon aria-hidden="true" />,
-        iconStyle: iconColorStyle(child.color),
-      };
-    });
+    const children: RenderedLink[] = link.children.map((child) =>
+      renderChild(link.id, child),
+    );
 
     const profile = {
       ...config.profile,
