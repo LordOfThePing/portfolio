@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { recordClick, recordVisit } from "app/lib/metrics";
-import { readConfig } from "app/lib/links-store";
+import { findList, readConfig } from "app/lib/links-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +9,8 @@ type Payload = {
   type?: unknown;
   id?: unknown;
   firstVisit?: unknown;
+  /** Custom list id when the event comes from /links/<list>. */
+  list?: unknown;
 };
 
 export async function POST(request: NextRequest) {
@@ -19,8 +21,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const listId = typeof body.list === "string" && body.list ? body.list : undefined;
+
   if (body.type === "visit") {
-    await recordVisit(body.firstVisit === true);
+    // Same reasoning as click ids below: only real lists can create keys.
+    if (listId && !findList(await readConfig(), listId)) {
+      return NextResponse.json({ error: "Unknown list" }, { status: 400 });
+    }
+    await recordVisit(body.firstVisit === true, listId);
     return new NextResponse(null, { status: 204 });
   }
 
@@ -33,7 +41,8 @@ export async function POST(request: NextRequest) {
     // exist can create counter keys. Without this, anyone could POST junk and
     // grow the store without bound. Group destinations post the composite form
     // "<parent>:<child>" — accepted here iff both halves exist.
-    const { links } = await readConfig();
+    const config = await readConfig();
+    const { links } = config;
     const [parentId, childId] = body.id.split(":", 2);
     const parent = links.find((link) => link.id === parentId);
     const known = parent
@@ -45,7 +54,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unknown link id" }, { status: 400 });
     }
 
-    await recordClick(body.id);
+    // From a custom list, the link must also be one that list shows.
+    if (listId && !findList(config, listId)?.show.includes(parentId)) {
+      return NextResponse.json({ error: "Unknown list" }, { status: 400 });
+    }
+
+    await recordClick(body.id, listId);
     return new NextResponse(null, { status: 204 });
   }
 

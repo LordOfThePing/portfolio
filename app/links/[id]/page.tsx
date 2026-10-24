@@ -90,6 +90,7 @@ export default async function LinkDirectPage({
         <LinksClient
           links={listLinks(config, list).map(renderLink)}
           profile={list.profile}
+          list={list.id}
         />
       </section>
     );

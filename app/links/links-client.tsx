@@ -45,7 +45,14 @@ function track(payload: Record<string, unknown>): void {
   }
 }
 
-function useVisitTracking(enabled: boolean): void {
+/**
+ * Each list dedupes visitors on its own, so a device counts as a new visitor
+ * on every list it opens — the per-list numbers stay right, the "all lists"
+ * total can count a device more than once.
+ */
+const visitorFlag = (list?: string) => (list ? `${VISITOR_FLAG}:${list}` : VISITOR_FLAG);
+
+function useVisitTracking(enabled: boolean, list?: string): void {
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -56,14 +63,14 @@ function useVisitTracking(enabled: boolean): void {
 
     let firstVisit = false;
     try {
-      firstVisit = localStorage.getItem(VISITOR_FLAG) === null;
-      if (firstVisit) localStorage.setItem(VISITOR_FLAG, "1");
+      firstVisit = localStorage.getItem(visitorFlag(list)) === null;
+      if (firstVisit) localStorage.setItem(visitorFlag(list), "1");
     } catch {
       // Private mode / storage blocked: still counts as a visit.
     }
 
-    track({ type: "visit", firstVisit });
-  }, [enabled]);
+    track({ type: "visit", firstVisit, list });
+  }, [enabled, list]);
 }
 
 /** The icon chip. iconStyle (color-based) wins; else fall back to featured/neutral. */
@@ -143,14 +150,14 @@ function frameProps(link: RenderedLink): {
   };
 }
 
-function LeafButton({ link }: { link: RenderedLink }) {
+function LeafButton({ link, list }: { link: RenderedLink; list?: string }) {
   const isExternal = link.href.startsWith("http") || link.href.startsWith("mailto:");
   const frame = frameProps(link);
 
   return (
     <a
       href={link.href}
-      onClick={() => track({ type: "click", id: link.id })}
+      onClick={() => track({ type: "click", id: link.id, list })}
       target={isExternal ? "_blank" : undefined}
       rel={isExternal ? "noopener noreferrer" : undefined}
       className={frame.className}
@@ -164,7 +171,7 @@ function LeafButton({ link }: { link: RenderedLink }) {
   );
 }
 
-function GroupButton({ link }: { link: RenderedLink }) {
+function GroupButton({ link, list }: { link: RenderedLink; list?: string }) {
   const [open, setOpen] = useState(false);
   const panelId = `links-group-${link.id.replace(/[^a-z0-9_-]/gi, "-")}`;
   const frame = frameProps(link);
@@ -174,7 +181,7 @@ function GroupButton({ link }: { link: RenderedLink }) {
     setOpen(next);
     // Count the group tap once per expand so the group behaves like any other
     // button in stats, matching the direct /links/<id> share link.
-    if (next) track({ type: "click", id: link.id });
+    if (next) track({ type: "click", id: link.id, list });
   };
 
   return (
@@ -208,7 +215,7 @@ function GroupButton({ link }: { link: RenderedLink }) {
           className="flex flex-col gap-2 mt-2 ml-4 pl-3 border-l border-black/10 dark:border-white/10"
         >
           {link.children?.map((child) => (
-            <LeafButton key={child.id} link={child} />
+            <LeafButton key={child.id} link={child} list={list} />
           ))}
         </div>
       )}
@@ -216,22 +223,25 @@ function GroupButton({ link }: { link: RenderedLink }) {
   );
 }
 
-function LinkButton({ link }: { link: RenderedLink }) {
-  if (link.children?.length) return <GroupButton link={link} />;
-  return <LeafButton link={link} />;
+function LinkButton({ link, list }: { link: RenderedLink; list?: string }) {
+  if (link.children?.length) return <GroupButton link={link} list={list} />;
+  return <LeafButton link={link} list={list} />;
 }
 
 export default function LinksClient({
   links,
   profile,
   trackVisit = true,
+  list,
 }: {
   links: RenderedLink[];
   profile: LinksProfile;
   /** The chooser page (/links/<group>) suppresses this to avoid double-count. */
   trackVisit?: boolean;
+  /** Custom list id; tags this page's visits and clicks in stats. */
+  list?: string;
 }) {
-  useVisitTracking(trackVisit);
+  useVisitTracking(trackVisit, list);
 
   return (
     <div className="w-full max-w-[460px] mx-auto">
@@ -264,7 +274,7 @@ export default function LinksClient({
 
       <nav className="flex flex-col gap-3" aria-label="My links">
         {links.map((link) => (
-          <LinkButton key={link.id} link={link} />
+          <LinkButton key={link.id} link={link} list={list} />
         ))}
       </nav>
     </div>

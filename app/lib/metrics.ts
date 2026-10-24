@@ -41,15 +41,21 @@ const dayStart = (day: string) => new Date(`${day}T00:00:00.000Z`);
 const nextDayStart = (day: string) => new Date(dayStart(day).getTime() + DAY_MS);
 
 /**
- * Record a visit. `firstVisit` is true only the first time a given device loads
- * /links (deduped client-side). Never throws — a metrics failure must not break
- * the page.
+ * `list_id` is only sent for custom lists, so Default-list events keep
+ * inserting fine on a database that hasn't run the list_id migration yet.
  */
-export async function recordVisit(firstVisit: boolean): Promise<void> {
+const listColumn = (listId?: string) => (listId ? { list_id: listId } : {});
+
+/**
+ * Record a visit. `firstVisit` is true only the first time a given device loads
+ * that page (deduped client-side). `listId` is set for custom lists. Never
+ * throws — a metrics failure must not break the page.
+ */
+export async function recordVisit(firstVisit: boolean, listId?: string): Promise<void> {
   try {
     const { error } = await supabase()
       .from("link_events")
-      .insert({ kind: "visit", first_visit: firstVisit });
+      .insert({ kind: "visit", first_visit: firstVisit, ...listColumn(listId) });
     if (error) throw error;
   } catch (error) {
     console.error("[metrics] failed to record visit:", error);
@@ -57,25 +63,30 @@ export async function recordVisit(firstVisit: boolean): Promise<void> {
 }
 
 /** Record a click on a link. Never throws — must not break the click. */
-export async function recordClick(linkId: string): Promise<void> {
+export async function recordClick(linkId: string, listId?: string): Promise<void> {
   try {
     const { error } = await supabase()
       .from("link_events")
-      .insert({ kind: "click", link_id: linkId });
+      .insert({ kind: "click", link_id: linkId, ...listColumn(listId) });
     if (error) throw error;
   } catch (error) {
     console.error(`[metrics] failed to record click "${linkId}":`, error);
   }
 }
 
+/** Stats filter value for the Default list (events with no list_id). */
+export const DEFAULT_LIST = "default";
+
 /**
  * Metric -> total count over the UTC range `from <= day <= to` (inclusive,
- * YYYY-MM-DD). Pass `from = null` for all time. Returns {} rather than crashing
- * the dashboard.
+ * YYYY-MM-DD). Pass `from = null` for all time. `list` narrows to one list
+ * (DEFAULT_LIST or a custom list id); omit it for every list combined.
+ * Returns {} rather than crashing the dashboard.
  */
 export async function readRange(
   from: string | null,
   to: string,
+  list?: string,
 ): Promise<Counters> {
   try {
     const fromTs = (from ? dayStart(from) : new Date(0)).toISOString();
@@ -84,6 +95,9 @@ export async function readRange(
     const { data, error } = await supabase().rpc("link_metrics", {
       from_ts: fromTs,
       to_ts: toTs,
+      // Only sent when filtering, so "all lists" keeps working against the
+      // pre-migration two-argument function.
+      ...(list ? { _list: list } : {}),
     });
     if (error) throw error;
 

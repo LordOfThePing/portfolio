@@ -14,6 +14,10 @@ create table if not exists public.link_events (
   first_visit boolean     not null default false  -- true only on a device's first visit
 );
 
+-- Which custom list the event came from (/links/<list>). Null = the Default
+-- list (/links) or a direct /links/<id> share.
+alter table public.link_events add column if not exists list_id text;
+
 create index if not exists link_events_created_at_idx on public.link_events (created_at);
 create index if not exists link_events_kind_idx        on public.link_events (kind);
 
@@ -29,23 +33,37 @@ create table if not exists public.link_config (
 --    'visits', 'visitors', and 'click:<link_id>' — matching the app's counter
 --    keys exactly, so the dashboard code stays unchanged.
 --    [from_ts, to_ts) is a half-open interval (from inclusive, to exclusive).
-create or replace function public.link_metrics(from_ts timestamptz, to_ts timestamptz)
+--    _list: null = every list combined, 'default' = the Default list only,
+--    otherwise that custom list's id.
+--    (The drop removes the older two-argument version, which would otherwise
+--    stay behind as an overload.)
+drop function if exists public.link_metrics(timestamptz, timestamptz);
+create or replace function public.link_metrics(
+  from_ts timestamptz,
+  to_ts   timestamptz,
+  _list   text default null
+)
 returns table (metric text, count bigint)
 language sql
 stable
 as $$
+  with e as (
+    select kind, link_id, first_visit
+    from public.link_events
+    where created_at >= from_ts and created_at < to_ts
+      and (_list is null or coalesce(list_id, 'default') = _list)
+  )
   select 'visits'::text, count(*)::bigint
-  from public.link_events
-  where kind = 'visit' and created_at >= from_ts and created_at < to_ts
+  from e
+  where kind = 'visit'
   union all
   select 'visitors', count(*)
-  from public.link_events
-  where kind = 'visit' and first_visit and created_at >= from_ts and created_at < to_ts
+  from e
+  where kind = 'visit' and first_visit
   union all
   select 'click:' || link_id, count(*)
-  from public.link_events
+  from e
   where kind = 'click' and link_id is not null
-    and created_at >= from_ts and created_at < to_ts
   group by link_id;
 $$;
 
