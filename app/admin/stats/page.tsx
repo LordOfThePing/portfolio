@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import { isAdmin } from "app/lib/admin-auth";
-import { CLICK_PREFIX, KEY, readRange, utcDay, utcDayAgo } from "app/lib/metrics";
-import { readConfig } from "app/lib/links-store";
+import {
+  CLICK_PREFIX,
+  DEFAULT_LIST,
+  KEY,
+  readRange,
+  utcDay,
+  utcDayAgo,
+} from "app/lib/metrics";
+import { findList, listLinks, readConfig } from "app/lib/links-store";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +33,17 @@ const RANGES = {
 } as const;
 
 type RangeKey = keyof typeof RANGES;
+
+const pill = (active: boolean) =>
+  [
+    "rounded-lg px-3 py-1.5 text-sm no-underline transition-colors",
+    active
+      ? "bg-black dark:bg-white text-white dark:text-black font-medium"
+      : "border border-black/10 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.08]",
+  ].join(" ");
+
+const statsHref = (range: RangeKey, list?: string) =>
+  `/admin/stats?range=${range}${list ? `&list=${encodeURIComponent(list)}` : ""}`;
 
 const nf = new Intl.NumberFormat("en-US");
 
@@ -75,43 +93,59 @@ function BarRow({ row, max }: { row: Row; max: number }) {
 export default async function StatsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ range?: string }>;
+  searchParams: Promise<{ range?: string; list?: string }>;
 }) {
   // The layout already gates rendering; this guards the data read itself.
   if (!(await isAdmin())) return null;
 
-  const { range } = await searchParams;
+  const { range, list: listParam } = await searchParams;
   const rangeKey: RangeKey = range && range in RANGES ? (range as RangeKey) : "all";
   const { label: rangeLabel, days } = RANGES[rangeKey];
 
   const to = utcDay();
   const from = days === null ? null : utcDayAgo(days - 1);
 
-  const [counters, config] = await Promise.all([readRange(from, to), readConfig()]);
-  const knownIds = new Set(config.links.map((link) => link.id));
+  const config = await readConfig();
+  // undefined = every list combined; otherwise DEFAULT_LIST or a custom list.
+  const customList = listParam ? findList(config, listParam) : undefined;
+  const listKey =
+    listParam === DEFAULT_LIST ? DEFAULT_LIST : customList ? customList.id : undefined;
+  const listPath = customList ? `/links/${customList.id}` : "/links";
+
+  const counters = await readRange(from, to, listKey);
+  const linkById = new Map(config.links.map((link) => [link.id, link]));
 
   const visits = counters[KEY.visits] ?? 0;
   const visitors = counters[KEY.visitors] ?? 0;
 
-  const rows: Row[] = config.links.map((link) => ({
+  // A custom list ranks the links it shows; Default and "all" rank the pool.
+  const shown = customList ? listLinks(config, customList) : config.links;
+  const shownIds = new Set(shown.map((link) => link.id));
+
+  const rows: Row[] = shown.map((link) => ({
     id: link.id,
     label: link.label,
     clicks: counters[KEY.click(link.id)] ?? 0,
-    note: link.enabled === false ? "hidden" : undefined,
+    note: !customList && link.enabled === false ? "hidden" : undefined,
   }));
 
-  // Counters whose link was deleted or renamed — still worth showing.
+  // Counters whose link was deleted or renamed (or, in a list, taken out of
+  // it) — still worth showing.
   const orphans: Row[] = Object.entries(counters)
     .filter(
       ([key]) =>
-        key.startsWith(CLICK_PREFIX) && !knownIds.has(key.slice(CLICK_PREFIX.length)),
+        key.startsWith(CLICK_PREFIX) && !shownIds.has(key.slice(CLICK_PREFIX.length)),
     )
-    .map(([key, clicks]) => ({
-      id: key,
-      label: key.slice(CLICK_PREFIX.length),
-      clicks,
-      note: "removed",
-    }));
+    .map(([key, clicks]) => {
+      const id = key.slice(CLICK_PREFIX.length);
+      const link = linkById.get(id);
+      return {
+        id: key,
+        label: link?.label ?? id,
+        clicks,
+        note: link ? "not in list" : "removed",
+      };
+    });
 
   const all = [...rows, ...orphans].sort((a, b) => b.clicks - a.clicks);
   const totalClicks = all.reduce((sum, row) => sum + row.clicks, 0);
@@ -125,30 +159,51 @@ export default async function StatsPage({
           Linktree stats
         </h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-          {rangeLabel} · <span className="font-mono">/links</span>
+          {rangeLabel} ·{" "}
+          <span className="font-mono">{listKey ? listPath : "all lists"}</span>
         </p>
       </div>
 
-      <nav className="flex flex-wrap gap-1 mb-6" aria-label="Date range">
+      <nav
+        className={`flex flex-wrap gap-1 ${config.lists.length > 0 ? "mb-3" : "mb-6"}`}
+        aria-label="Date range"
+      >
         {(Object.keys(RANGES) as RangeKey[]).map((key) => {
           const active = key === rangeKey;
           return (
             <a
               key={key}
-              href={`/admin/stats?range=${key}`}
+              href={statsHref(key, listKey)}
               aria-current={active ? "page" : undefined}
-              className={[
-                "rounded-lg px-3 py-1.5 text-sm no-underline transition-colors",
-                active
-                  ? "bg-black dark:bg-white text-white dark:text-black font-medium"
-                  : "border border-black/10 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.08]",
-              ].join(" ")}
+              className={pill(active)}
             >
               {RANGES[key].label}
             </a>
           );
         })}
       </nav>
+
+      {config.lists.length > 0 && (
+        <nav className="flex flex-wrap gap-1 mb-6" aria-label="List">
+          {[
+            { key: undefined, label: "All lists" },
+            { key: DEFAULT_LIST, label: "Default" },
+            ...config.lists.map((list) => ({ key: list.id, label: list.id })),
+          ].map((item) => {
+            const active = item.key === listKey;
+            return (
+              <a
+                key={item.key ?? "all"}
+                href={statsHref(rangeKey, item.key)}
+                aria-current={active ? "page" : undefined}
+                className={pill(active)}
+              >
+                {item.label}
+              </a>
+            );
+          })}
+        </nav>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         <Stat label="Visits" value={nf.format(visits)} />
@@ -164,8 +219,8 @@ export default async function StatsPage({
       {totalClicks === 0 && visits === 0 ? (
         <p className="text-sm text-neutral-500 dark:text-neutral-400 rounded-xl border border-black/10 dark:border-white/10 p-4">
           No data in this range. Open{" "}
-          <a href="/links" className="underline underline-offset-4">
-            /links
+          <a href={listPath} className="underline underline-offset-4">
+            {listPath}
           </a>{" "}
           and tap a button — numbers show up here immediately.
         </p>
@@ -182,7 +237,9 @@ export default async function StatsPage({
         /links. <strong className="font-medium">Visitors</strong> counts each
         device once. <strong className="font-medium">Click rate</strong> is
         clicks ÷ visits, so it can exceed 100% when people tap more than one
-        link. Days are counted in UTC.
+        link. Days are counted in UTC. Each list counts its own visitors, so
+        under "All lists" a device that opened two lists counts twice; direct
+        /links/&lt;id&gt; shares count under Default.
       </p>
     </>
   );
