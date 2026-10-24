@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -25,7 +25,7 @@ import type { LinksConfig } from "app/lib/links-store";
 import { ICON_META } from "app/links/icons";
 import { LINK_COLORS, LINK_COLOR_KEYS } from "app/links/colors";
 import IconPicker from "./icon-picker";
-import { resetConfig, saveConfig, type SaveState } from "../actions";
+import { resetConfig, saveConfig, uploadAvatarAction, type SaveState } from "../actions";
 
 const field =
   "w-full rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/[0.04] px-3 py-2 text-[16px] sm:text-sm text-black dark:text-white placeholder:text-neutral-400 outline-none focus:border-[#47a3f3]";
@@ -133,15 +133,156 @@ function GripIcon() {
 const gripButton =
   "flex-none grid place-items-center w-8 h-10 rounded-lg text-neutral-400 dark:text-neutral-500 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:text-neutral-700 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing transition-colors";
 
-/** Name / handle / bio / avatar — the header of the Default list or a custom one. */
+/** Uploads are cropped to a centered square this many px wide (or smaller). */
+const AVATAR_PX = 512;
+
+/**
+ * Crops to a centered square and re-encodes in the browser, so a 5 MB phone
+ * photo goes up as ~100 KB and fits the server-action body limit. Browsers
+ * without WebP encoding (Safari) hand back PNG, which the server also accepts.
+ */
+async function toSquareAvatar(file: File): Promise<File> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error("Couldn't read that image. Try a JPG or PNG.");
+  }
+
+  const side = Math.min(bitmap.width, bitmap.height);
+  const size = Math.min(AVATAR_PX, side);
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Couldn't process that image.");
+  context.drawImage(
+    bitmap,
+    (bitmap.width - side) / 2,
+    (bitmap.height - side) / 2,
+    side,
+    side,
+    0,
+    0,
+    size,
+    size,
+  );
+  bitmap.close();
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/webp", 0.85),
+  );
+  if (!blob) throw new Error("Couldn't process that image.");
+  return new File([blob], `avatar.${blob.type.split("/")[1]}`, { type: blob.type });
+}
+
+function AvatarField({
+  value,
+  onChange,
+  allowNone,
+}: {
+  value: string;
+  onChange: (avatar: string) => void;
+  /** Custom lists can have no photo; Default falls back to the seed photo. */
+  allowNone?: boolean;
+}) {
+  const fieldId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    setError(undefined);
+    try {
+      const formData = new FormData();
+      formData.append("file", await toSquareAvatar(file));
+      const result = await uploadAvatarAction(formData);
+      if (result.url) onChange(result.url);
+      else setError(result.error ?? "Upload failed.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className={labelText}>Photo</span>
+      <div className="flex items-center gap-3">
+        {value ? (
+          <img
+            src={value}
+            alt=""
+            className="flex-none w-14 h-14 rounded-full object-cover border border-black/10 dark:border-white/10"
+          />
+        ) : (
+          <span className="flex-none grid place-items-center w-14 h-14 rounded-full border border-dashed border-black/20 dark:border-white/20 text-[11px] text-neutral-400">
+            none
+          </span>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/*"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // Clear it so picking the same file again still fires onChange.
+            event.target.value = "";
+            if (file) void upload(file);
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="text-sm rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+        >
+          {uploading ? "Uploading…" : value ? "Change photo" : "Upload photo"}
+        </button>
+        {allowNone && value && !uploading && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      <details className="text-[12px] text-neutral-500 dark:text-neutral-400">
+        <summary className="cursor-pointer select-none w-fit">
+          Use a path or URL instead
+        </summary>
+        <input
+          id={`${fieldId}-avatar`}
+          aria-label="Photo path or URL"
+          className={`${field} font-mono text-[13px] mt-1.5`}
+          value={value}
+          autoCapitalize="none"
+          autoCorrect="off"
+          placeholder="/fotocv.jpg"
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </details>
+    </div>
+  );
+}
+
+/** Name / handle / bio / photo — the header of the Default list or a custom one. */
 function ProfileFields({
   profile,
   onChange,
-  avatarHint,
+  allowNoAvatar,
 }: {
   profile: LinksProfile;
   onChange: (patch: Partial<LinksProfile>) => void;
-  avatarHint?: string;
+  allowNoAvatar?: boolean;
 }) {
   const fieldId = useId();
 
@@ -185,20 +326,11 @@ function ProfileFields({
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className={labelText} htmlFor={`${fieldId}-avatar`}>
-          Avatar path or URL{avatarHint ? ` — ${avatarHint}` : ""}
-        </label>
-        <input
-          id={`${fieldId}-avatar`}
-          className={`${field} font-mono text-[13px]`}
-          value={profile.avatar}
-          autoCapitalize="none"
-          autoCorrect="off"
-          placeholder="/fotocv.jpg"
-          onChange={(event) => onChange({ avatar: event.target.value })}
-        />
-      </div>
+      <AvatarField
+        value={profile.avatar}
+        onChange={(avatar) => onChange({ avatar })}
+        allowNone={allowNoAvatar}
+      />
     </>
   );
 }
@@ -339,10 +471,10 @@ function ListEditor({
         <ProfileFields
           profile={list.profile}
           onChange={(patch) => onChange({ profile: { ...list.profile, ...patch } })}
-          avatarHint="empty = no photo"
+          allowNoAvatar
         />
         <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-          Leave handle or bio empty to hide them on this list.
+          Leave handle or bio empty, or remove the photo, to hide them on this list.
         </p>
       </section>
 

@@ -20,6 +20,7 @@ import {
   writeConfig,
   type LinksConfig,
 } from "app/lib/links-store";
+import { uploadAvatar } from "app/lib/avatar-store";
 
 export type LoginState = { error?: string };
 export type SaveState = { errors?: string[]; savedAt?: number };
@@ -105,6 +106,26 @@ export async function resetConfig(): Promise<SaveState> {
   revalidatePath("/links");
   revalidatePath("/admin/config");
   return { savedAt: Date.now() };
+}
+
+export type UploadState = { url?: string; error?: string };
+
+/**
+ * Stores a profile photo and returns its public URL. Nothing references it
+ * until the config that uses it is saved.
+ */
+export async function uploadAvatarAction(formData: FormData): Promise<UploadState> {
+  if (!(await isAdmin())) return { error: "Session expired. Log in again." };
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { error: "No file received." };
+
+  try {
+    return { url: await uploadAvatar(file) };
+  } catch (error) {
+    console.error("[admin] failed to upload avatar:", error);
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 export async function getDefaultConfig(): Promise<LinksConfig> {

@@ -113,3 +113,16 @@ as $$
 $$;
 
 alter table public.blog_posts enable row level security;
+
+-- ============================================================================
+--  6) Profile photos uploaded from /admin/config (Default and custom lists).
+--     Public bucket: a photo is readable by URL (it's on /links anyway). Writes
+--     only happen server-side with the service role — no storage policies grant
+--     anon/authenticated writes, so the public key can't upload or delete.
+-- ============================================================================
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 1048576, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public             = excluded.public,
+      file_size_limit    = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
