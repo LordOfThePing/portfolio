@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import type { ChildLink, LinkItem } from "app/links-config";
+import type { ChildLink, LinkItem, LinksProfile } from "app/links-config";
 import type { LinksConfig } from "app/lib/links-store";
 import { ICON_META } from "app/links/icons";
 import { LINK_COLORS, LINK_COLOR_KEYS } from "app/links/colors";
@@ -40,8 +40,36 @@ const labelText =
  */
 type Row = { uid: string; link: LinkItem; isNew: boolean };
 
+/**
+ * A custom list while editing. `show` holds row uids, not link ids, so renaming
+ * a link on the Default tab doesn't drop it from lists; ids are resolved on save.
+ */
+type ListRow = {
+  uid: string;
+  id: string;
+  profile: LinksProfile;
+  show: string[];
+  indexed: boolean;
+};
+
+/** "default" or a list's uid. */
+type Tab = string;
+
 let uidCounter = 0;
 const nextUid = () => `row-${++uidCounter}`;
+
+function toEditorState(config: LinksConfig): { rows: Row[]; lists: ListRow[] } {
+  const rows = config.links.map((link) => ({ uid: nextUid(), link, isNew: false }));
+  const uidById = new Map(rows.map((row) => [row.link.id, row.uid]));
+  const lists = config.lists.map((list) => ({
+    uid: nextUid(),
+    id: list.id,
+    profile: list.profile,
+    show: list.show.flatMap((id) => uidById.get(id) ?? []),
+    indexed: list.indexed === true,
+  }));
+  return { rows, lists };
+}
 
 function slugify(value: string): string {
   return value
@@ -84,6 +112,318 @@ function DirectLink({ id }: { id: string }) {
         {copied ? "Copied ✓" : "Copy"}
       </button>
     </div>
+  );
+}
+
+function GripIcon() {
+  return (
+    <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true">
+      <g fill="currentColor">
+        <circle cx="2" cy="2" r="1.5" />
+        <circle cx="8" cy="2" r="1.5" />
+        <circle cx="2" cy="8" r="1.5" />
+        <circle cx="8" cy="8" r="1.5" />
+        <circle cx="2" cy="14" r="1.5" />
+        <circle cx="8" cy="14" r="1.5" />
+      </g>
+    </svg>
+  );
+}
+
+const gripButton =
+  "flex-none grid place-items-center w-8 h-10 rounded-lg text-neutral-400 dark:text-neutral-500 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:text-neutral-700 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing transition-colors";
+
+/** Name / handle / bio / avatar — the header of the Default list or a custom one. */
+function ProfileFields({
+  profile,
+  onChange,
+  avatarHint,
+}: {
+  profile: LinksProfile;
+  onChange: (patch: Partial<LinksProfile>) => void;
+  avatarHint?: string;
+}) {
+  const fieldId = useId();
+
+  return (
+    <>
+      <div className="flex flex-col gap-1">
+        <label className={labelText} htmlFor={`${fieldId}-name`}>
+          Name
+        </label>
+        <input
+          id={`${fieldId}-name`}
+          className={field}
+          value={profile.name}
+          onChange={(event) => onChange({ name: event.target.value })}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className={labelText} htmlFor={`${fieldId}-handle`}>
+          Handle
+        </label>
+        <input
+          id={`${fieldId}-handle`}
+          className={field}
+          value={profile.handle}
+          placeholder="@pepeflynn"
+          onChange={(event) => onChange({ handle: event.target.value })}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className={labelText} htmlFor={`${fieldId}-bio`}>
+          Bio
+        </label>
+        <textarea
+          id={`${fieldId}-bio`}
+          rows={3}
+          className={`${field} resize-y`}
+          value={profile.bio}
+          onChange={(event) => onChange({ bio: event.target.value })}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className={labelText} htmlFor={`${fieldId}-avatar`}>
+          Avatar path or URL{avatarHint ? ` — ${avatarHint}` : ""}
+        </label>
+        <input
+          id={`${fieldId}-avatar`}
+          className={`${field} font-mono text-[13px]`}
+          value={profile.avatar}
+          autoCapitalize="none"
+          autoCorrect="off"
+          placeholder="/fotocv.jpg"
+          onChange={(event) => onChange({ avatar: event.target.value })}
+        />
+      </div>
+    </>
+  );
+}
+
+/** One link inside a custom list: drag to reorder, × to take it out. */
+function ListLinkRow({ row, onRemove }: { row: Row; onRemove: () => void }) {
+  const { link } = row;
+  const Icon = ICON_META[link.icon]?.Icon ?? ICON_META.globe.Icon;
+  const childCount = link.children?.length ?? 0;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: row.uid });
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={[
+        "flex items-center gap-1 rounded-xl border bg-black/[0.02] dark:bg-white/[0.03] p-1.5",
+        isDragging
+          ? "border-[#47a3f3] shadow-lg opacity-90 z-10 relative"
+          : "border-black/10 dark:border-white/10",
+      ].join(" ")}
+    >
+      <button
+        ref={setActivatorNodeRef}
+        type="button"
+        aria-label={`Reorder ${link.label || "link"}`}
+        style={{ touchAction: "none" }}
+        className={gripButton}
+        {...attributes}
+        {...listeners}
+      >
+        <GripIcon />
+      </button>
+      <span className="flex-none grid place-items-center w-8 h-8 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white">
+        <Icon />
+      </span>
+      <span className="flex flex-col min-w-0 flex-1 px-2">
+        <span className="text-sm text-black dark:text-white truncate">
+          {link.label || <span className="text-neutral-400">Untitled link</span>}
+        </span>
+        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
+          {link.enabled === false ? "hidden on Default · " : ""}
+          {childCount > 0
+            ? `group · ${childCount} destination${childCount === 1 ? "" : "s"}`
+            : link.href || "no URL"}
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove ${link.label || "link"} from this list`}
+        className="flex-none grid place-items-center w-10 h-10 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+      >
+        ✕
+      </button>
+    </li>
+  );
+}
+
+function ListEditor({
+  list,
+  rows,
+  sensors,
+  onChange,
+  onRemove,
+}: {
+  list: ListRow;
+  rows: Row[];
+  sensors: ReturnType<typeof useSensors>;
+  onChange: (patch: Partial<ListRow>) => void;
+  onRemove: () => void;
+}) {
+  const fieldId = useId();
+  const rowByUid = new Map(rows.map((row) => [row.uid, row]));
+  const shown = list.show.flatMap((uid) => rowByUid.get(uid) ?? []);
+  const shownUids = new Set(list.show);
+  const others = rows.filter((row) => !shownUids.has(row.uid));
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const from = list.show.indexOf(String(active.id));
+    const to = list.show.indexOf(String(over.id));
+    if (from === -1 || to === -1) return;
+    onChange({ show: arrayMove(list.show, from, to) });
+  };
+
+  return (
+    <>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-black dark:text-white">List</h2>
+
+        <div className="flex flex-col gap-1">
+          <label className={labelText} htmlFor={`${fieldId}-slug`}>
+            URL slug — changing it breaks links you've shared
+          </label>
+          <input
+            id={`${fieldId}-slug`}
+            className={`${field} font-mono text-[13px]`}
+            value={list.id}
+            placeholder="recruiters"
+            autoCapitalize="none"
+            autoCorrect="off"
+            onChange={(event) => onChange({ id: event.target.value })}
+          />
+          {list.id && <DirectLink id={list.id} />}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 pt-1">
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+            <input
+              type="checkbox"
+              checked={list.indexed}
+              onChange={(event) => onChange({ indexed: event.target.checked })}
+              className="w-4 h-4 accent-[#47a3f3]"
+            />
+            Show in search engines
+          </label>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="ml-auto text-sm rounded-lg border border-red-500/30 text-red-600 dark:text-red-400 px-3 py-2 hover:bg-red-500/10 transition-colors"
+          >
+            Delete list
+          </button>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-black dark:text-white">Profile</h2>
+        <ProfileFields
+          profile={list.profile}
+          onChange={(patch) => onChange({ profile: { ...list.profile, ...patch } })}
+          avatarHint="empty = no photo"
+        />
+        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+          Leave handle or bio empty to hide them on this list.
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-black dark:text-white">
+          Links in this list{" "}
+          <span className="text-neutral-500 dark:text-neutral-400 font-normal">
+            ({shown.length})
+          </span>
+        </h2>
+
+        {shown.length === 0 ? (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 rounded-xl border border-black/10 dark:border-white/10 p-4">
+            No links yet. Add some from below.
+          </p>
+        ) : (
+          <>
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+              Drag to reorder — this list keeps its own order. Edit the links
+              themselves on the Default tab.
+            </p>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={list.show} strategy={verticalListSortingStrategy}>
+                <ul className="flex flex-col gap-2">
+                  {shown.map((row) => (
+                    <ListLinkRow
+                      key={row.uid}
+                      row={row}
+                      onRemove={() =>
+                        onChange({ show: list.show.filter((uid) => uid !== row.uid) })
+                      }
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
+          </>
+        )}
+      </section>
+
+      {others.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-black dark:text-white">
+            Not in this list{" "}
+            <span className="text-neutral-500 dark:text-neutral-400 font-normal">
+              ({others.length})
+            </span>
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {others.map((row) => {
+              const Icon = ICON_META[row.link.icon]?.Icon ?? ICON_META.globe.Icon;
+              return (
+                <li
+                  key={row.uid}
+                  className="flex items-center gap-3 rounded-xl border border-dashed border-black/10 dark:border-white/10 p-1.5 pl-3"
+                >
+                  <span className="flex-none grid place-items-center w-8 h-8 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-neutral-500 dark:text-neutral-400">
+                    <Icon />
+                  </span>
+                  <span className="flex-1 min-w-0 text-sm text-neutral-600 dark:text-neutral-300 truncate">
+                    {row.link.label || "Untitled link"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ show: [...list.show, row.uid] })}
+                    className="flex-none text-sm rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors"
+                  >
+                    + Add
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+    </>
   );
 }
 
@@ -311,20 +651,11 @@ function LinkCard({
           // touch-action:none stops the browser scrolling the page instead of
           // starting the drag on touch devices.
           style={{ touchAction: "none" }}
-          className="flex-none grid place-items-center w-8 h-10 rounded-lg text-neutral-400 dark:text-neutral-500 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:text-neutral-700 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing transition-colors"
+          className={gripButton}
           {...attributes}
           {...listeners}
         >
-          <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true">
-            <g fill="currentColor">
-              <circle cx="2" cy="2" r="1.5" />
-              <circle cx="8" cy="2" r="1.5" />
-              <circle cx="2" cy="8" r="1.5" />
-              <circle cx="8" cy="8" r="1.5" />
-              <circle cx="2" cy="14" r="1.5" />
-              <circle cx="8" cy="14" r="1.5" />
-            </g>
-          </svg>
+          <GripIcon />
         </button>
 
         <button
@@ -341,7 +672,7 @@ function LinkCard({
               {link.label || <span className="text-neutral-400">Untitled link</span>}
             </span>
             <span className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
-              {link.enabled === false ? "hidden · " : ""}
+              {link.enabled === false ? "hidden on Default · " : ""}
               {link.featured ? "featured · " : ""}
               {isGroup
                 ? `group · ${children.length} destination${children.length === 1 ? "" : "s"}`
@@ -513,7 +844,7 @@ function LinkCard({
                 onChange={(event) => onChange({ enabled: event.target.checked })}
                 className="w-4 h-4 accent-[#47a3f3]"
               />
-              Visible
+              Visible on Default
             </label>
             <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
               <input
@@ -546,9 +877,10 @@ export default function ConfigEditor({
 }) {
   const router = useRouter();
   const [profile, setProfile] = useState(initialConfig.profile);
-  const [rows, setRows] = useState<Row[]>(() =>
-    initialConfig.links.map((link) => ({ uid: nextUid(), link, isNew: false })),
-  );
+  const [initial] = useState(() => toEditorState(initialConfig));
+  const [rows, setRows] = useState<Row[]>(initial.rows);
+  const [lists, setLists] = useState<ListRow[]>(initial.lists);
+  const [tab, setTab] = useState<Tab>("default");
   const [state, setState] = useState<SaveState>({});
   const [dirty, setDirty] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -590,6 +922,42 @@ export default function ConfigEditor({
     const label = row?.link.label || "this link";
     if (!confirm(`Delete "${label}"? Its click stats stay in the dashboard.`)) return;
     setRows((current) => current.filter((item) => item.uid !== uid));
+    setLists((current) =>
+      current.map((list) => ({ ...list, show: list.show.filter((item) => item !== uid) })),
+    );
+    touched();
+  };
+
+  const addList = () => {
+    const uid = nextUid();
+    setLists((current) => [
+      ...current,
+      {
+        uid,
+        id: "",
+        // Start as a copy of what Default shows today; trim from there.
+        profile: { ...profile },
+        show: rows.filter((row) => row.link.enabled !== false).map((row) => row.uid),
+        indexed: false,
+      },
+    ]);
+    setTab(uid);
+    touched();
+  };
+
+  const patchList = (uid: string, patch: Partial<ListRow>) => {
+    setLists((current) =>
+      current.map((list) => (list.uid === uid ? { ...list, ...patch } : list)),
+    );
+    touched();
+  };
+
+  const removeList = (uid: string) => {
+    const list = lists.find((item) => item.uid === uid);
+    const name = list?.id ? `/links/${list.id}` : "this list";
+    if (!confirm(`Delete ${name}? Its URL stops working. Its stats are kept.`)) return;
+    setLists((current) => current.filter((item) => item.uid !== uid));
+    setTab("default");
     touched();
   };
 
@@ -620,13 +988,18 @@ export default function ConfigEditor({
   };
 
   const save = () => {
+    const idByUid = new Map(rows.map((row) => [row.uid, row.link.id]));
     startTransition(async () => {
       finish(
         await saveConfig({
           profile,
           links: rows.map((row) => row.link),
-          // Not editable here yet; passed through so saving doesn't drop them.
-          lists: initialConfig.lists,
+          lists: lists.map((list) => ({
+            id: list.id,
+            profile: list.profile,
+            show: list.show.flatMap((uid) => idByUid.get(uid) ?? []),
+            indexed: list.indexed,
+          })),
         }),
       );
     });
@@ -635,7 +1008,7 @@ export default function ConfigEditor({
   const reset = () => {
     if (
       !confirm(
-        "Reset to the defaults in links-config.ts? Your saved links will be replaced. Click stats are kept.",
+        "Reset to the defaults in links-config.ts? Your saved links and lists will be replaced. Click stats are kept.",
       )
     )
       return;
@@ -651,6 +1024,8 @@ export default function ConfigEditor({
   };
 
   const saved = Boolean(state.savedAt) && !dirty;
+  const activeList = lists.find((list) => list.uid === tab);
+  const viewPath = activeList ? `/links/${activeList.id}` : "/links";
 
   return (
     <div className="flex flex-col gap-8">
@@ -659,119 +1034,116 @@ export default function ConfigEditor({
           Linktree config
         </h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-          Edits go live on <span className="font-mono">/links</span> as soon as
-          you save.
+          Edits go live on <span className="font-mono">{viewPath}</span> as soon
+          as you save.
         </p>
       </div>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium text-black dark:text-white">Profile</h2>
-
-        <div className="flex flex-col gap-1">
-          <label className={labelText} htmlFor="profile-name">
-            Name
-          </label>
-          <input
-            id="profile-name"
-            className={field}
-            value={profile.name}
-            onChange={(event) => updateProfile({ name: event.target.value })}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className={labelText} htmlFor="profile-handle">
-            Handle
-          </label>
-          <input
-            id="profile-handle"
-            className={field}
-            value={profile.handle}
-            placeholder="@pepeflynn"
-            onChange={(event) => updateProfile({ handle: event.target.value })}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className={labelText} htmlFor="profile-bio">
-            Bio
-          </label>
-          <textarea
-            id="profile-bio"
-            rows={3}
-            className={`${field} resize-y`}
-            value={profile.bio}
-            onChange={(event) => updateProfile({ bio: event.target.value })}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className={labelText} htmlFor="profile-avatar">
-            Avatar path or URL
-          </label>
-          <input
-            id="profile-avatar"
-            className={`${field} font-mono text-[13px]`}
-            value={profile.avatar}
-            autoCapitalize="none"
-            autoCorrect="off"
-            placeholder="/fotocv.jpg"
-            onChange={(event) => updateProfile({ avatar: event.target.value })}
-          />
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-black dark:text-white">
-            Links{" "}
-            <span className="text-neutral-500 dark:text-neutral-400 font-normal">
-              ({rows.length})
-            </span>
-          </h2>
-          <button
-            type="button"
-            onClick={addLink}
-            className="text-sm rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors"
-          >
-            + Add link
-          </button>
-        </div>
-
-        {rows.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 rounded-xl border border-black/10 dark:border-white/10 p-4">
-            No links yet. Add one, or reset to the defaults below.
-          </p>
-        ) : (
-          <>
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-              Drag the handle to reorder. Order here is the order on /links.
-            </p>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-              onDragEnd={handleDragEnd}
+      <nav
+        className="flex gap-1 overflow-x-auto rounded-xl border border-black/10 dark:border-white/10 p-1"
+        aria-label="Lists"
+      >
+        {[{ uid: "default", label: "Default" }, ...lists.map((list) => ({
+          uid: list.uid,
+          label: list.id || "Untitled list",
+        }))].map((item) => {
+          const active = tab === item.uid;
+          return (
+            <button
+              key={item.uid}
+              type="button"
+              onClick={() => setTab(item.uid)}
+              aria-current={active ? "page" : undefined}
+              className={[
+                "flex-none rounded-lg px-3 py-1.5 text-sm transition-colors",
+                active
+                  ? "bg-black dark:bg-white text-white dark:text-black font-medium"
+                  : "text-neutral-600 dark:text-neutral-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.08]",
+              ].join(" ")}
             >
-              <SortableContext
-                items={rows.map((row) => row.uid)}
-                strategy={verticalListSortingStrategy}
+              {item.label}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={addList}
+          className="flex-none rounded-lg px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors"
+        >
+          + New list
+        </button>
+      </nav>
+
+      {activeList ? (
+        <ListEditor
+          key={activeList.uid}
+          list={activeList}
+          rows={rows}
+          sensors={sensors}
+          onChange={(patch) => patchList(activeList.uid, patch)}
+          onRemove={() => removeList(activeList.uid)}
+        />
+      ) : (
+        <>
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-medium text-black dark:text-white">Profile</h2>
+            <ProfileFields profile={profile} onChange={updateProfile} />
+          </section>
+
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-black dark:text-white">
+              Links{" "}
+              <span className="text-neutral-500 dark:text-neutral-400 font-normal">
+                ({rows.length})
+              </span>
+            </h2>
+            <button
+              type="button"
+              onClick={addLink}
+              className="text-sm rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors"
+            >
+              + Add link
+            </button>
+          </div>
+
+          {rows.length === 0 ? (
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 rounded-xl border border-black/10 dark:border-white/10 p-4">
+              No links yet. Add one, or reset to the defaults below.
+            </p>
+          ) : (
+            <>
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                Drag the handle to reorder. Order here is the order on /links;
+                custom lists keep their own.
+              </p>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                onDragEnd={handleDragEnd}
               >
-                <ul className="flex flex-col gap-2">
-                  {rows.map((row) => (
-                    <LinkCard
-                      key={row.uid}
-                      row={row}
-                      onChange={(patch) => patchLink(row.uid, patch)}
-                      onRemove={() => removeLink(row.uid)}
-                    />
-                  ))}
-                </ul>
-              </SortableContext>
-            </DndContext>
-          </>
-        )}
-      </section>
+                <SortableContext
+                  items={rows.map((row) => row.uid)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <ul className="flex flex-col gap-2">
+                    {rows.map((row) => (
+                      <LinkCard
+                        key={row.uid}
+                        row={row}
+                        onChange={(patch) => patchLink(row.uid, patch)}
+                        onRemove={() => removeLink(row.uid)}
+                      />
+                    ))}
+                  </ul>
+                </SortableContext>
+              </DndContext>
+            </>
+          )}
+        </section>
+        </>
+      )}
 
       {state.errors?.length ? (
         <ul className="flex flex-col gap-1 rounded-xl border border-red-500/40 bg-red-500/[0.06] p-4">
@@ -794,12 +1166,12 @@ export default function ConfigEditor({
         </button>
 
         <a
-          href="/links"
+          href={viewPath}
           target="_blank"
           rel="noreferrer"
           className="text-sm text-neutral-600 dark:text-neutral-300 underline underline-offset-4"
         >
-          View /links
+          View {viewPath}
         </a>
 
         <button
