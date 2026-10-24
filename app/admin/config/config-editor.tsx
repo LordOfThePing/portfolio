@@ -621,7 +621,14 @@ export default function ConfigEditor({
 
   const save = () => {
     startTransition(async () => {
-      finish(await saveConfig({ profile, links: rows.map((row) => row.link) }));
+      finish(
+        await saveConfig({
+          profile,
+          links: rows.map((row) => row.link),
+          // Not editable here yet; passed through so saving doesn't drop them.
+          lists: initialConfig.lists,
+        }),
+      );
     });
   };
 

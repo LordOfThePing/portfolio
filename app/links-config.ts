@@ -67,6 +67,28 @@ export type LinksProfile = {
   bio: string;
 };
 
+/**
+ * A custom list: its own header plus its own pick of links from the shared
+ * pool, served at /links/<id>. The Default list is /links itself (the
+ * top-level profile + every `enabled` link).
+ */
+export type LinksList = {
+  /**
+   * Slug: the list's URL (/links/<id>) and its stats key. Lowercase, no spaces,
+   * and it can't match any link id — both live under /links/<id>.
+   */
+  id: string;
+  /** Header for this list. Empty avatar, handle or bio = not shown. */
+  profile: LinksProfile;
+  /**
+   * Ids of the links shown, in display order. Opt-in: links added to the pool
+   * later don't appear here until picked. Hidden-on-Default links can be shown.
+   */
+  show: string[];
+  /** Let search engines index this list. Defaults to false. */
+  indexed?: boolean;
+};
+
 /** Header shown above the buttons. */
 export const linksProfile: LinksProfile = {
   avatar: "/fotocv.jpg",
@@ -139,3 +161,6 @@ export const links: LinkItem[] = [
     icon: "email",
   },
 ];
+
+/** Custom lists. Seeded empty; create them at /admin/config. */
+export const lists: LinksList[] = [];

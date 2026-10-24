@@ -3,14 +3,16 @@ import { describeError, supabase } from "./supabase";
 import {
   links as seedLinks,
   linksProfile as seedProfile,
+  lists as seedLists,
   type ChildLink,
   type LinkItem,
+  type LinksList,
   type LinksProfile,
 } from "app/links-config";
 import { isLinkIcon, type LinkIcon } from "app/links/icon-names";
 import { isLinkColor } from "app/links/colors";
 
-export type { LinksProfile };
+export type { LinksList, LinksProfile };
 
 /**
  * The live Linktree config, edited at /admin/config, stored as a single JSONB
@@ -27,11 +29,13 @@ const CONFIG_ID = 1;
 export type LinksConfig = {
   profile: LinksProfile;
   links: LinkItem[];
+  lists: LinksList[];
 };
 
 export const LIMITS = {
   links: 50,
   children: 15,
+  lists: 20,
   id: 32,
   label: 60,
   description: 120,
@@ -43,9 +47,20 @@ export const LIMITS = {
 
 const ID_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 
+/**
+ * List ids that are never allowed. "default" is how stats name the Default
+ * list (events with no list), so a custom list can't take it.
+ */
+const RESERVED_LIST_IDS = new Set(["default"]);
+
 export const defaultConfig = (): LinksConfig => ({
   profile: { ...seedProfile },
   links: seedLinks.map((link) => ({ ...link })),
+  lists: seedLists.map((list) => ({
+    ...list,
+    profile: { ...list.profile },
+    show: [...list.show],
+  })),
 });
 
 /**
@@ -234,7 +249,95 @@ export function validateConfig(input: unknown): {
     });
   });
 
-  return { config: { profile, links }, errors };
+  const lists = validateLists(raw.lists, links, errors);
+
+  return { config: { profile, links, lists }, errors };
+}
+
+/**
+ * Lists are checked against the already-validated links. Ids in `show` that
+ * no longer exist (link deleted or renamed) are dropped silently — that's an
+ * expected side effect of editing the pool, not an error.
+ */
+function validateLists(
+  input: unknown,
+  links: LinkItem[],
+  errors: string[],
+): LinksList[] {
+  const rawLists = Array.isArray(input) ? input : [];
+  if (rawLists.length > LIMITS.lists) {
+    errors.push(`Too many lists (max ${LIMITS.lists}).`);
+  }
+
+  const linkIds = new Set(links.map((link) => link.id));
+  const lists: LinksList[] = [];
+  const seen = new Set<string>();
+
+  rawLists.slice(0, LIMITS.lists).forEach((entry, index) => {
+    const item = (entry ?? {}) as Partial<LinksList>;
+    const position = `List ${index + 1}`;
+
+    const id = clamp(str(item.id).toLowerCase(), LIMITS.id);
+    if (!id) {
+      errors.push(`${position}: URL slug can't be empty.`);
+      return;
+    }
+    if (!ID_PATTERN.test(id)) {
+      errors.push(
+        `${position} ("${id}"): slug may only use lowercase letters, numbers, - and _.`,
+      );
+      return;
+    }
+    if (RESERVED_LIST_IDS.has(id)) {
+      errors.push(`${position} ("${id}"): "${id}" is reserved — pick another slug.`);
+      return;
+    }
+    if (linkIds.has(id)) {
+      errors.push(
+        `${position} ("${id}"): a link already uses /links/${id} — pick another slug.`,
+      );
+      return;
+    }
+    if (seen.has(id)) {
+      errors.push(`${position} ("${id}"): duplicate slug — each list needs its own.`);
+      return;
+    }
+
+    const rawProfile = (item.profile ?? {}) as Partial<LinksProfile>;
+    const name = clamp(str(rawProfile.name), LIMITS.name);
+    if (!name) {
+      errors.push(`${position} ("${id}"): name can't be empty.`);
+      return;
+    }
+    const avatar = clamp(str(rawProfile.avatar), LIMITS.href);
+    if (avatar && !isSafeHref(avatar)) {
+      errors.push(
+        `${position} ("${id}"): avatar must be a path like /fotocv.jpg or an https:// URL.`,
+      );
+      return;
+    }
+
+    const rawShow = Array.isArray(item.show) ? item.show : [];
+    const show = Array.from(new Set(rawShow.map(str))).filter((linkId) =>
+      linkIds.has(linkId),
+    );
+
+    seen.add(id);
+    lists.push({
+      id,
+      profile: {
+        // Unlike the Default profile, an empty avatar is allowed: no photo.
+        avatar,
+        name,
+        handle: clamp(str(rawProfile.handle), LIMITS.handle),
+        bio: clamp(str(rawProfile.bio), LIMITS.bio),
+      },
+      show,
+      indexed: item.indexed === true,
+    });
+  });
+
+  return lists;
 }
 
 /** The live config. Falls back to the seed defaults when nothing is saved yet. */
@@ -283,6 +386,13 @@ export const visibleLinks = (config: LinksConfig): LinkItem[] =>
 
 export const findLink = (config: LinksConfig, id: string): LinkItem | undefined =>
   config.links.find((link) => link.id === id);
+
+export const findList = (config: LinksConfig, id: string): LinksList | undefined =>
+  config.lists.find((list) => list.id === id);
+
+/** The links a custom list shows, in the list's own order. */
+export const listLinks = (config: LinksConfig, list: LinksList): LinkItem[] =>
+  list.show.flatMap((id) => findLink(config, id) ?? []);
 
 export const findChild = (
   parent: LinkItem,
