@@ -8,7 +8,7 @@ import {
   utcDay,
   utcDayAgo,
 } from "app/lib/metrics";
-import { findList, listLinks, readConfig } from "app/lib/links-store";
+import { findList, readConfig } from "app/lib/links-store";
 
 export const dynamic = "force-dynamic";
 
@@ -113,13 +113,14 @@ export default async function StatsPage({
   const listPath = customList ? `/links/${customList.id}` : "/links";
 
   const counters = await readRange(from, to, listKey);
-  const linkById = new Map(config.links.map((link) => [link.id, link]));
 
   const visits = counters[KEY.visits] ?? 0;
   const visitors = counters[KEY.visitors] ?? 0;
 
-  // A custom list ranks the links it shows; Default and "all" rank the pool.
-  const shown = customList ? listLinks(config, customList) : config.links;
+  // A custom list ranks its own links; Default and "all lists" rank Default's.
+  // (Under "all lists", a custom list's clicks add to the Default link with
+  // the same id, or show up by id if Default has none.)
+  const shown = (customList ?? config).links;
   const shownIds = new Set(shown.map((link) => link.id));
 
   const rows: Row[] = shown.map((link) => ({
@@ -129,8 +130,14 @@ export default async function StatsPage({
     note: !customList && link.enabled === false ? "hidden" : undefined,
   }));
 
-  // Counters whose link was deleted or renamed (or, in a list, taken out of
-  // it) — still worth showing.
+  // Under "all lists", a custom list's own links that Default doesn't have.
+  const listOnly = new Map(
+    listKey
+      ? []
+      : config.lists.flatMap((list) => list.links.map((link) => [link.id, link] as const)),
+  );
+
+  // Counters whose link was deleted or renamed — still worth showing.
   const orphans: Row[] = Object.entries(counters)
     .filter(
       ([key]) =>
@@ -138,12 +145,12 @@ export default async function StatsPage({
     )
     .map(([key, clicks]) => {
       const id = key.slice(CLICK_PREFIX.length);
-      const link = linkById.get(id);
+      const link = listOnly.get(id);
       return {
         id: key,
         label: link?.label ?? id,
         clicks,
-        note: link ? "not in list" : "removed",
+        note: link ? "custom list" : "removed",
       };
     });
 

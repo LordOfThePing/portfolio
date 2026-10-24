@@ -40,9 +40,14 @@ export async function POST(request: NextRequest) {
     // Ids are checked against the live config, so only links that actually
     // exist can create counter keys. Without this, anyone could POST junk and
     // grow the store without bound. Group destinations post the composite form
-    // "<parent>:<child>" — accepted here iff both halves exist.
+    // "<parent>:<child>" — accepted here iff both halves exist. A custom list's
+    // clicks are checked against that list's own links.
     const config = await readConfig();
-    const { links } = config;
+    const list = listId ? findList(config, listId) : undefined;
+    if (listId && !list) {
+      return NextResponse.json({ error: "Unknown list" }, { status: 400 });
+    }
+    const { links } = list ?? config;
     const [parentId, childId] = body.id.split(":", 2);
     const parent = links.find((link) => link.id === parentId);
     const known = parent
@@ -52,11 +57,6 @@ export async function POST(request: NextRequest) {
       : false;
     if (!known) {
       return NextResponse.json({ error: "Unknown link id" }, { status: 400 });
-    }
-
-    // From a custom list, the link must also be one that list shows.
-    if (listId && !findList(config, listId)?.show.includes(parentId)) {
-      return NextResponse.json({ error: "Unknown list" }, { status: 400 });
     }
 
     await recordClick(body.id, listId);

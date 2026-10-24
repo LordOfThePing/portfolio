@@ -68,9 +68,9 @@ export type LinksProfile = {
 };
 
 /**
- * A custom list: its own header plus its own pick of links from the shared
- * pool, served at /links/<id>. The Default list is /links itself (the
- * top-level profile + every `enabled` link).
+ * A custom list: its own header and its own links, served at /links/<id>.
+ * Its links are independent copies — editing one never touches Default or
+ * another list. The Default list is /links itself (top-level profile + links).
  */
 export type LinksList = {
   /**
@@ -81,10 +81,10 @@ export type LinksList = {
   /** Header for this list. Empty avatar, handle or bio = not shown. */
   profile: LinksProfile;
   /**
-   * Ids of the links shown, in display order. Opt-in: links added to the pool
-   * later don't appear here until picked. Hidden-on-Default links can be shown.
+   * This list's own buttons, same shape as the Default ones. Ids only need to
+   * be unique within the list; each one's direct share is /links/<list>/<id>.
    */
-  show: string[];
+  links: LinkItem[];
   /** Let search engines index this list. Defaults to false. */
   indexed?: boolean;
 };

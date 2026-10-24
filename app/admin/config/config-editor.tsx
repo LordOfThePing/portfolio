@@ -40,35 +40,38 @@ const labelText =
  */
 type Row = { uid: string; link: LinkItem; isNew: boolean };
 
-/**
- * A custom list while editing. `show` holds row uids, not link ids, so renaming
- * a link on the Default tab doesn't drop it from lists; ids are resolved on save.
- */
+/** A custom list while editing: its own header and its own links. */
 type ListRow = {
   uid: string;
   id: string;
   profile: LinksProfile;
-  show: string[];
+  rows: Row[];
   indexed: boolean;
 };
 
 /** "default" or a list's uid. */
 type Tab = string;
 
+/** Replaces a row list from its previous value, like a state setter. */
+type RowsUpdate = (update: (rows: Row[]) => Row[]) => void;
+
 let uidCounter = 0;
 const nextUid = () => `row-${++uidCounter}`;
 
+const toRows = (links: LinkItem[]): Row[] =>
+  links.map((link) => ({ uid: nextUid(), link, isNew: false }));
+
 function toEditorState(config: LinksConfig): { rows: Row[]; lists: ListRow[] } {
-  const rows = config.links.map((link) => ({ uid: nextUid(), link, isNew: false }));
-  const uidById = new Map(rows.map((row) => [row.link.id, row.uid]));
-  const lists = config.lists.map((list) => ({
-    uid: nextUid(),
-    id: list.id,
-    profile: list.profile,
-    show: list.show.flatMap((id) => uidById.get(id) ?? []),
-    indexed: list.indexed === true,
-  }));
-  return { rows, lists };
+  return {
+    rows: toRows(config.links),
+    lists: config.lists.map((list) => ({
+      uid: nextUid(),
+      id: list.id,
+      profile: list.profile,
+      rows: toRows(list.links),
+      indexed: list.indexed === true,
+    })),
+  };
 }
 
 function slugify(value: string): string {
@@ -81,16 +84,16 @@ function slugify(value: string): string {
     .slice(0, 32);
 }
 
-/** Shows the shareable /links/<id> path with a copy button. */
-function DirectLink({ id }: { id: string }) {
+/** Shows a shareable path (/links/<id>, /links/<list>/<id>) with a copy button. */
+function DirectLink({ path }: { path: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
     try {
       const url =
         typeof window !== "undefined"
-          ? `${window.location.origin}/links/${id}`
-          : `/links/${id}`;
+          ? `${window.location.origin}${path}`
+          : path;
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
@@ -102,7 +105,7 @@ function DirectLink({ id }: { id: string }) {
   return (
     <div className="flex items-center gap-2 mt-1">
       <code className="flex-1 min-w-0 truncate rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] px-2.5 py-1.5 text-[12px] text-neutral-600 dark:text-neutral-300">
-        /links/{id}
+        {path}
       </code>
       <button
         type="button"
@@ -335,95 +338,125 @@ function ProfileFields({
   );
 }
 
-/** One link inside a custom list: drag to reorder, × to take it out. */
-function ListLinkRow({ row, onRemove }: { row: Row; onRemove: () => void }) {
-  const { link } = row;
-  const Icon = ICON_META[link.icon]?.Icon ?? ICON_META.globe.Icon;
-  const childCount = link.children?.length ?? 0;
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: row.uid });
+/** The draggable, editable links of the Default list or of one custom list. */
+function LinksSection({
+  rows,
+  onRowsChange,
+  basePath,
+  sensors,
+  emptyHint,
+}: {
+  rows: Row[];
+  onRowsChange: RowsUpdate;
+  /** Where this list lives; each link's direct share is `${basePath}/<id>`. */
+  basePath: string;
+  sensors: ReturnType<typeof useSensors>;
+  emptyHint: string;
+}) {
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    onRowsChange((current) => {
+      const from = current.findIndex((row) => row.uid === active.id);
+      const to = current.findIndex((row) => row.uid === over.id);
+      if (from === -1 || to === -1) return current;
+      return arrayMove(current, from, to);
+    });
+  };
+
+  const patchLink = (uid: string, patch: Partial<LinkItem>) =>
+    onRowsChange((current) =>
+      current.map((row) =>
+        row.uid === uid ? { ...row, link: { ...row.link, ...patch } } : row,
+      ),
+    );
+
+  const removeLink = (uid: string) => {
+    const row = rows.find((item) => item.uid === uid);
+    const label = row?.link.label || "this link";
+    if (!confirm(`Delete "${label}"? Its click stats stay in the dashboard.`)) return;
+    onRowsChange((current) => current.filter((item) => item.uid !== uid));
+  };
+
+  const addLink = () =>
+    onRowsChange((current) => [
+      ...current,
+      {
+        uid: nextUid(),
+        isNew: true,
+        link: { id: "", label: "", href: "", icon: "globe", enabled: true },
+      },
+    ]);
 
   return (
-    <li
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={[
-        "flex items-center gap-1 rounded-xl border bg-black/[0.02] dark:bg-white/[0.03] p-1.5",
-        isDragging
-          ? "border-[#47a3f3] shadow-lg opacity-90 z-10 relative"
-          : "border-black/10 dark:border-white/10",
-      ].join(" ")}
-    >
-      <button
-        ref={setActivatorNodeRef}
-        type="button"
-        aria-label={`Reorder ${link.label || "link"}`}
-        style={{ touchAction: "none" }}
-        className={gripButton}
-        {...attributes}
-        {...listeners}
-      >
-        <GripIcon />
-      </button>
-      <span className="flex-none grid place-items-center w-8 h-8 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white">
-        <Icon />
-      </span>
-      <span className="flex flex-col min-w-0 flex-1 px-2">
-        <span className="text-sm text-black dark:text-white truncate">
-          {link.label || <span className="text-neutral-400">Untitled link</span>}
-        </span>
-        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
-          {link.enabled === false ? "hidden on Default · " : ""}
-          {childCount > 0
-            ? `group · ${childCount} destination${childCount === 1 ? "" : "s"}`
-            : link.href || "no URL"}
-        </span>
-      </span>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Remove ${link.label || "link"} from this list`}
-        className="flex-none grid place-items-center w-10 h-10 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-      >
-        ✕
-      </button>
-    </li>
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium text-black dark:text-white">
+          Links{" "}
+          <span className="text-neutral-500 dark:text-neutral-400 font-normal">
+            ({rows.length})
+          </span>
+        </h2>
+        <button
+          type="button"
+          onClick={addLink}
+          className="text-sm rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors"
+        >
+          + Add link
+        </button>
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 rounded-xl border border-black/10 dark:border-white/10 p-4">
+          {emptyHint}
+        </p>
+      ) : (
+        <>
+          <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+            Drag the handle to reorder. Order here is the order on {basePath}.
+          </p>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={rows.map((row) => row.uid)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="flex flex-col gap-2">
+                {rows.map((row) => (
+                  <LinkCard
+                    key={row.uid}
+                    row={row}
+                    basePath={basePath}
+                    onChange={(patch) => patchLink(row.uid, patch)}
+                    onRemove={() => removeLink(row.uid)}
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
+        </>
+      )}
+    </section>
   );
 }
 
 function ListEditor({
   list,
-  rows,
   sensors,
   onChange,
+  onRowsChange,
   onRemove,
 }: {
   list: ListRow;
-  rows: Row[];
   sensors: ReturnType<typeof useSensors>;
   onChange: (patch: Partial<ListRow>) => void;
+  onRowsChange: RowsUpdate;
   onRemove: () => void;
 }) {
   const fieldId = useId();
-  const rowByUid = new Map(rows.map((row) => [row.uid, row]));
-  const shown = list.show.flatMap((uid) => rowByUid.get(uid) ?? []);
-  const shownUids = new Set(list.show);
-  const others = rows.filter((row) => !shownUids.has(row.uid));
-
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return;
-    const from = list.show.indexOf(String(active.id));
-    const to = list.show.indexOf(String(over.id));
-    if (from === -1 || to === -1) return;
-    onChange({ show: arrayMove(list.show, from, to) });
-  };
 
   return (
     <>
@@ -443,7 +476,7 @@ function ListEditor({
             autoCorrect="off"
             onChange={(event) => onChange({ id: event.target.value })}
           />
-          {list.id && <DirectLink id={list.id} />}
+          {list.id && <DirectLink path={`/links/${list.id}`} />}
         </div>
 
         <div className="flex flex-wrap items-center gap-4 pt-1">
@@ -478,83 +511,13 @@ function ListEditor({
         </p>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium text-black dark:text-white">
-          Links in this list{" "}
-          <span className="text-neutral-500 dark:text-neutral-400 font-normal">
-            ({shown.length})
-          </span>
-        </h2>
-
-        {shown.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 rounded-xl border border-black/10 dark:border-white/10 p-4">
-            No links yet. Add some from below.
-          </p>
-        ) : (
-          <>
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-              Drag to reorder — this list keeps its own order. Edit the links
-              themselves on the Default tab.
-            </p>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={list.show} strategy={verticalListSortingStrategy}>
-                <ul className="flex flex-col gap-2">
-                  {shown.map((row) => (
-                    <ListLinkRow
-                      key={row.uid}
-                      row={row}
-                      onRemove={() =>
-                        onChange({ show: list.show.filter((uid) => uid !== row.uid) })
-                      }
-                    />
-                  ))}
-                </ul>
-              </SortableContext>
-            </DndContext>
-          </>
-        )}
-      </section>
-
-      {others.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-black dark:text-white">
-            Not in this list{" "}
-            <span className="text-neutral-500 dark:text-neutral-400 font-normal">
-              ({others.length})
-            </span>
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {others.map((row) => {
-              const Icon = ICON_META[row.link.icon]?.Icon ?? ICON_META.globe.Icon;
-              return (
-                <li
-                  key={row.uid}
-                  className="flex items-center gap-3 rounded-xl border border-dashed border-black/10 dark:border-white/10 p-1.5 pl-3"
-                >
-                  <span className="flex-none grid place-items-center w-8 h-8 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] text-neutral-500 dark:text-neutral-400">
-                    <Icon />
-                  </span>
-                  <span className="flex-1 min-w-0 text-sm text-neutral-600 dark:text-neutral-300 truncate">
-                    {row.link.label || "Untitled link"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onChange({ show: [...list.show, row.uid] })}
-                    className="flex-none text-sm rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors"
-                  >
-                    + Add
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+      <LinksSection
+        rows={list.rows}
+        onRowsChange={onRowsChange}
+        basePath={list.id ? `/links/${list.id}` : "this list"}
+        sensors={sensors}
+        emptyHint="No links yet. Add one — links here belong only to this list."
+      />
     </>
   );
 }
@@ -719,10 +682,12 @@ function ChildCard({
 
 function LinkCard({
   row,
+  basePath,
   onChange,
   onRemove,
 }: {
   row: Row;
+  basePath: string;
   onChange: (patch: Partial<LinkItem>) => void;
   onRemove: () => void;
 }) {
@@ -804,7 +769,7 @@ function LinkCard({
               {link.label || <span className="text-neutral-400">Untitled link</span>}
             </span>
             <span className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
-              {link.enabled === false ? "hidden on Default · " : ""}
+              {link.enabled === false ? "hidden · " : ""}
               {link.featured ? "featured · " : ""}
               {isGroup
                 ? `group · ${children.length} destination${children.length === 1 ? "" : "s"}`
@@ -931,7 +896,9 @@ function LinkCard({
               autoCorrect="off"
               onChange={(event) => onChange({ id: event.target.value })}
             />
-            {link.id && <DirectLink id={link.id} />}
+            {link.id && basePath.startsWith("/") && (
+              <DirectLink path={`${basePath}/${link.id}`} />
+            )}
           </div>
 
           <div className="flex flex-col gap-2 rounded-lg border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] p-3">
@@ -976,7 +943,7 @@ function LinkCard({
                 onChange={(event) => onChange({ enabled: event.target.checked })}
                 className="w-4 h-4 accent-[#47a3f3]"
               />
-              Visible on Default
+              Visible
             </label>
             <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
               <input
@@ -1029,36 +996,21 @@ export default function ConfigEditor({
     setState({});
   };
 
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return;
-    setRows((current) => {
-      const from = current.findIndex((row) => row.uid === active.id);
-      const to = current.findIndex((row) => row.uid === over.id);
-      if (from === -1 || to === -1) return current;
-      return arrayMove(current, from, to);
-    });
+  const updateRows: RowsUpdate = (update) => {
+    setRows(update);
     touched();
   };
 
-  const patchLink = (uid: string, patch: Partial<LinkItem>) => {
-    setRows((current) =>
-      current.map((row) =>
-        row.uid === uid ? { ...row, link: { ...row.link, ...patch } } : row,
-      ),
-    );
-    touched();
-  };
-
-  const removeLink = (uid: string) => {
-    const row = rows.find((item) => item.uid === uid);
-    const label = row?.link.label || "this link";
-    if (!confirm(`Delete "${label}"? Its click stats stay in the dashboard.`)) return;
-    setRows((current) => current.filter((item) => item.uid !== uid));
-    setLists((current) =>
-      current.map((list) => ({ ...list, show: list.show.filter((item) => item !== uid) })),
-    );
-    touched();
-  };
+  const updateListRows =
+    (uid: string): RowsUpdate =>
+    (update) => {
+      setLists((current) =>
+        current.map((list) =>
+          list.uid === uid ? { ...list, rows: update(list.rows) } : list,
+        ),
+      );
+      touched();
+    };
 
   const addList = () => {
     const uid = nextUid();
@@ -1067,9 +1019,13 @@ export default function ConfigEditor({
       {
         uid,
         id: "",
-        // Start as a copy of what Default shows today; trim from there.
+        // Starts as a full copy of Default; from here on it's independent.
         profile: { ...profile },
-        show: rows.filter((row) => row.link.enabled !== false).map((row) => row.uid),
+        rows: rows.map((row) => ({
+          uid: nextUid(),
+          isNew: false,
+          link: structuredClone(row.link),
+        })),
         indexed: false,
       },
     ]);
@@ -1087,21 +1043,10 @@ export default function ConfigEditor({
   const removeList = (uid: string) => {
     const list = lists.find((item) => item.uid === uid);
     const name = list?.id ? `/links/${list.id}` : "this list";
-    if (!confirm(`Delete ${name}? Its URL stops working. Its stats are kept.`)) return;
+    if (!confirm(`Delete ${name} and all its links? Its URL stops working. Its stats are kept.`))
+      return;
     setLists((current) => current.filter((item) => item.uid !== uid));
     setTab("default");
-    touched();
-  };
-
-  const addLink = () => {
-    setRows((current) => [
-      ...current,
-      {
-        uid: nextUid(),
-        isNew: true,
-        link: { id: "", label: "", href: "", icon: "globe", enabled: true },
-      },
-    ]);
     touched();
   };
 
@@ -1114,13 +1059,14 @@ export default function ConfigEditor({
     setState(result);
     if (!result.errors?.length) {
       setDirty(false);
-      setRows((current) => current.map((row) => ({ ...row, isNew: false })));
+      const settle = (current: Row[]) => current.map((row) => ({ ...row, isNew: false }));
+      setRows(settle);
+      setLists((current) => current.map((list) => ({ ...list, rows: settle(list.rows) })));
       router.refresh();
     }
   };
 
   const save = () => {
-    const idByUid = new Map(rows.map((row) => [row.uid, row.link.id]));
     startTransition(async () => {
       finish(
         await saveConfig({
@@ -1129,7 +1075,7 @@ export default function ConfigEditor({
           lists: lists.map((list) => ({
             id: list.id,
             profile: list.profile,
-            show: list.show.flatMap((uid) => idByUid.get(uid) ?? []),
+            links: list.rows.map((row) => row.link),
             indexed: list.indexed,
           })),
         }),
@@ -1210,9 +1156,9 @@ export default function ConfigEditor({
         <ListEditor
           key={activeList.uid}
           list={activeList}
-          rows={rows}
           sensors={sensors}
           onChange={(patch) => patchList(activeList.uid, patch)}
+          onRowsChange={updateListRows(activeList.uid)}
           onRemove={() => removeList(activeList.uid)}
         />
       ) : (
@@ -1222,58 +1168,13 @@ export default function ConfigEditor({
             <ProfileFields profile={profile} onChange={updateProfile} />
           </section>
 
-        <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-black dark:text-white">
-              Links{" "}
-              <span className="text-neutral-500 dark:text-neutral-400 font-normal">
-                ({rows.length})
-              </span>
-            </h2>
-            <button
-              type="button"
-              onClick={addLink}
-              className="text-sm rounded-lg border border-black/10 dark:border-white/10 px-3 py-2 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors"
-            >
-              + Add link
-            </button>
-          </div>
-
-          {rows.length === 0 ? (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 rounded-xl border border-black/10 dark:border-white/10 p-4">
-              No links yet. Add one, or reset to the defaults below.
-            </p>
-          ) : (
-            <>
-              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                Drag the handle to reorder. Order here is the order on /links;
-                custom lists keep their own.
-              </p>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={rows.map((row) => row.uid)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <ul className="flex flex-col gap-2">
-                    {rows.map((row) => (
-                      <LinkCard
-                        key={row.uid}
-                        row={row}
-                        onChange={(patch) => patchLink(row.uid, patch)}
-                        onRemove={() => removeLink(row.uid)}
-                      />
-                    ))}
-                  </ul>
-                </SortableContext>
-              </DndContext>
-            </>
-          )}
-        </section>
+          <LinksSection
+            rows={rows}
+            onRowsChange={updateRows}
+            basePath="/links"
+            sensors={sensors}
+            emptyHint="No links yet. Add one, or reset to the defaults below."
+          />
         </>
       )}
 
