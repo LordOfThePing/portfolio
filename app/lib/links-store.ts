@@ -30,6 +30,8 @@ export type LinksConfig = {
   profile: LinksProfile;
   links: LinkItem[];
   lists: LinksList[];
+  /** Hide the site footer on /links. (Its header is always hidden.) */
+  hideFooter?: boolean;
 };
 
 export const LIMITS = {
@@ -61,6 +63,7 @@ export const defaultConfig = (): LinksConfig => ({
     profile: { ...list.profile },
     links: list.links.map((link) => ({ ...link })),
   })),
+  hideFooter: false,
 });
 
 /**
@@ -111,7 +114,10 @@ export function validateConfig(input: unknown): {
   const links = validateLinks(raw.links, errors);
   const lists = validateLists(raw.lists, links, errors);
 
-  return { config: { profile, links, lists }, errors };
+  return {
+    config: { profile, links, lists, hideFooter: raw.hideFooter === true },
+    errors,
+  };
 }
 
 /**
@@ -199,6 +205,8 @@ function validateLists(
       },
       links: validateLinks(rawLinks, errors, `List "${id}" › `),
       indexed: item.indexed === true,
+      hideHeader: item.hideHeader === true,
+      hideFooter: item.hideFooter === true,
     });
   });
 

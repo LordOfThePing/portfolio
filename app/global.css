@@ -24,6 +24,16 @@
   outline-color: var(--feat-fg);
 }
 
+/*
+ * The root layout renders the site header and footer on every page; a links
+ * page that hides them renders <HideSiteFrame> (app/links/site-frame.tsx).
+ * Done in CSS so it's part of the server HTML — nothing flashes in and out.
+ */
+main:has([data-hide-header]) > nav,
+main:has([data-hide-footer]) > footer {
+  display: none;
+}
+
 /* Light theme colors */
 :root {
   --sh-class: #2d5e9d;

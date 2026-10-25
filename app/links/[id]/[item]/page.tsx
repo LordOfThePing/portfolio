@@ -26,5 +26,9 @@ export default async function ListLinkPage({ params }: { params: Params }) {
   const link = findListLink(list, item);
   if (!link) redirect(home);
 
-  return serveDirectLink(link, list.profile, { home, list: list.id });
+  return serveDirectLink(link, list.profile, {
+    home,
+    list: list.id,
+    frame: { header: list.hideHeader, footer: list.hideFooter },
+  });
 }

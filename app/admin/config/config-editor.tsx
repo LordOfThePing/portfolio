@@ -47,6 +47,8 @@ type ListRow = {
   profile: LinksProfile;
   rows: Row[];
   indexed: boolean;
+  hideHeader: boolean;
+  hideFooter: boolean;
 };
 
 /** "default" or a list's uid. */
@@ -70,6 +72,8 @@ function toEditorState(config: LinksConfig): { rows: Row[]; lists: ListRow[] } {
       profile: list.profile,
       rows: toRows(list.links),
       indexed: list.indexed === true,
+      hideHeader: list.hideHeader === true,
+      hideFooter: list.hideFooter === true,
     })),
   };
 }
@@ -443,6 +447,49 @@ function LinksSection({
   );
 }
 
+/** Checkboxes for the site header/footer around a list page. */
+function FrameFields({
+  hideHeader,
+  hideFooter,
+  onChange,
+}: {
+  /** Omitted for Default, whose header is always hidden. */
+  hideHeader?: boolean;
+  hideFooter: boolean;
+  onChange: (patch: { hideHeader?: boolean; hideFooter?: boolean }) => void;
+}) {
+  const box = "w-4 h-4 accent-[#47a3f3]";
+  const label = "flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300";
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-sm font-medium text-black dark:text-white">Page</h2>
+      <div className="flex flex-wrap gap-4">
+        {hideHeader !== undefined && (
+          <label className={label}>
+            <input
+              type="checkbox"
+              checked={!hideHeader}
+              onChange={(event) => onChange({ hideHeader: !event.target.checked })}
+              className={box}
+            />
+            Show site header (portfolio name, Blog)
+          </label>
+        )}
+        <label className={label}>
+          <input
+            type="checkbox"
+            checked={!hideFooter}
+            onChange={(event) => onChange({ hideFooter: !event.target.checked })}
+            className={box}
+          />
+          Show site footer (©, Privacy, Terms)
+        </label>
+      </div>
+    </section>
+  );
+}
+
 function ListEditor({
   list,
   sensors,
@@ -510,6 +557,12 @@ function ListEditor({
           Leave handle or bio empty, or remove the photo, to hide them on this list.
         </p>
       </section>
+
+      <FrameFields
+        hideHeader={list.hideHeader}
+        hideFooter={list.hideFooter}
+        onChange={onChange}
+      />
 
       <LinksSection
         rows={list.rows}
@@ -976,6 +1029,7 @@ export default function ConfigEditor({
 }) {
   const router = useRouter();
   const [profile, setProfile] = useState(initialConfig.profile);
+  const [hideFooter, setHideFooter] = useState(initialConfig.hideFooter === true);
   const [initial] = useState(() => toEditorState(initialConfig));
   const [rows, setRows] = useState<Row[]>(initial.rows);
   const [lists, setLists] = useState<ListRow[]>(initial.lists);
@@ -1027,6 +1081,8 @@ export default function ConfigEditor({
           link: structuredClone(row.link),
         })),
         indexed: false,
+        hideHeader: false,
+        hideFooter,
       },
     ]);
     setTab(uid);
@@ -1072,11 +1128,14 @@ export default function ConfigEditor({
         await saveConfig({
           profile,
           links: rows.map((row) => row.link),
+          hideFooter,
           lists: lists.map((list) => ({
             id: list.id,
             profile: list.profile,
             links: list.rows.map((row) => row.link),
             indexed: list.indexed,
+            hideHeader: list.hideHeader,
+            hideFooter: list.hideFooter,
           })),
         }),
       );
@@ -1167,6 +1226,14 @@ export default function ConfigEditor({
             <h2 className="text-sm font-medium text-black dark:text-white">Profile</h2>
             <ProfileFields profile={profile} onChange={updateProfile} />
           </section>
+
+          <FrameFields
+            hideFooter={hideFooter}
+            onChange={(patch) => {
+              setHideFooter(patch.hideFooter === true);
+              touched();
+            }}
+          />
 
           <LinksSection
             rows={rows}

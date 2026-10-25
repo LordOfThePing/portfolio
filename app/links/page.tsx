@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { readConfig, visibleLinks } from "app/lib/links-store";
 import LinksClient, { type RenderedLink } from "./links-client";
 import { renderLink } from "./render";
+import { HideSiteFrame } from "./site-frame";
 
 /**
  * Rendered per request so edits made in /admin/config are live immediately,
@@ -31,6 +32,8 @@ export default async function LinksPage() {
 
   return (
     <section className="py-4">
+      {/* /links is a standalone bio-link page: never the portfolio header. */}
+      <HideSiteFrame header footer={config.hideFooter} />
       <LinksClient links={links} profile={config.profile} />
     </section>
   );

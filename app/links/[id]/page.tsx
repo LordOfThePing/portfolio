@@ -4,6 +4,7 @@ import { findLink, findList, readConfig, visibleLinks } from "app/lib/links-stor
 import LinksClient from "../links-client";
 import { renderLink } from "../render";
 import { directLinkMetadata, serveDirectLink } from "../direct";
+import { HideSiteFrame } from "../site-frame";
 
 /**
  * /links/<id> is either a Default-list button's direct share (see direct.tsx)
@@ -49,13 +50,19 @@ export default async function LinkOrListPage({
   const config = await readConfig();
 
   const link = findLink(config, id);
-  if (link) return serveDirectLink(link, config.profile, { home: "/links" });
+  if (link) {
+    return serveDirectLink(link, config.profile, {
+      home: "/links",
+      frame: { header: true, footer: config.hideFooter },
+    });
+  }
 
   const list = findList(config, id);
   if (!list) redirect("/links");
 
   return (
     <section className="py-4">
+      <HideSiteFrame header={list.hideHeader} footer={list.hideFooter} />
       <LinksClient
         links={visibleLinks(list).map(renderLink)}
         profile={list.profile}

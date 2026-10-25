@@ -5,6 +5,7 @@ import { recordClick } from "app/lib/metrics";
 import { isSafeHref } from "app/lib/links-store";
 import LinksClient from "./links-client";
 import { renderChild } from "./render";
+import { HideSiteFrame, type SiteFrame } from "./site-frame";
 
 /**
  * Direct share of a single button, shared by /links/<id> (Default list) and
@@ -52,11 +53,14 @@ export async function serveDirectLink(
   {
     home,
     list,
+    frame,
   }: {
     /** Where to send visitors if the link can't be served. */
     home: string;
     /** Custom list id, for stats. */
     list?: string;
+    /** What the chooser hides of the site frame — same as its list page. */
+    frame: SiteFrame;
   },
 ) {
   // Group: render the chooser. Count a click on the group id so the share
@@ -73,6 +77,7 @@ export async function serveDirectLink(
 
     return (
       <section className="py-4">
+        <HideSiteFrame {...frame} />
         <LinksClient
           links={link.children.map((child) => renderChild(link.id, child))}
           profile={chooserProfile}

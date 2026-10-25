@@ -87,6 +87,10 @@ export type LinksList = {
   links: LinkItem[];
   /** Let search engines index this list. Defaults to false. */
   indexed?: boolean;
+  /** Hide the site header (portfolio name + Blog) on this list's pages. */
+  hideHeader?: boolean;
+  /** Hide the site footer (© line + Privacy/Terms) on this list's pages. */
+  hideFooter?: boolean;
 };
 
 /** Header shown above the buttons. */
